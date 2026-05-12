@@ -6,7 +6,7 @@ type Net = {
 }
 
 class CoreService {
-    private BASE_URL: string = "http://localhost:3000/api";
+    private BASE_URL: string = "https://nacos-backend-y0vl.onrender.com";
 
     setBaseUrl(url: string) {
         this.BASE_URL = url;
