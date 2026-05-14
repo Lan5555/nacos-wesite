@@ -9,6 +9,7 @@ interface HeroData {
   totalEvents?: number;
 }
 
+
 const resourceLevels = [
   { label: "100 Level", count: 24, pct: 85 },
   { label: "200 Level", count: 31, pct: 92 },
@@ -18,8 +19,9 @@ const resourceLevels = [
 ];
 
 export default function Hero() {
-     const [data, setData] = useState<HeroData | null>(null);
-     const [loading, setLoading] = useState(true);
+
+      const [data, setData] = useState<HeroData | null>(null);
+      const [loading, setLoading] = useState(true);
 
       const service = new CoreService();
 
@@ -42,9 +44,11 @@ export default function Hero() {
         }
       };
 
+
       useEffect(() => {
         fetchData();
       }, []);
+
   return (
     <section className={styles.hero} id="hero">
       <div className={styles.inner}>
@@ -79,6 +83,7 @@ export default function Hero() {
             <div className={styles.statItem}>
               <span className={styles.statNum}>
                     {loading ? "..." : data?.totalUsers ? `${data.totalUsers.toLocaleString()}+` : "5,000+"}
+
               </span>
               <span className={styles.statLabel}>Active Members</span>
             </div>
