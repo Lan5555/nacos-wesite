@@ -50,8 +50,6 @@ const Hero: React.FC<HeroProps> = ({ sharedData, isLoading }) => {
               totalUsers: usersResult.data['totalUsers'],
               totalEvents: eventsResult.data['totalEvents'],
             });
-
-            showToast("Hero data loaded successfully! delete this after you see it.", "success");
           } else {
             showToast("Failed to load hero data. Please try again later.", "error");
           }

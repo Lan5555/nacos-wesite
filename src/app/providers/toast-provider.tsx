@@ -102,7 +102,7 @@ export default function ToastProvider({ children }: Props) {
                 bg-white
                 border border-gray-200
                 shadow-xl
-                px-6 py-8
+                px-3 py-4
                 pointer-events-auto
               "
             >
