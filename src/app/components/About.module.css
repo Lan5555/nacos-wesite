@@ -1,0 +1,172 @@
+.about {
+  background: var(--bg-light);
+  padding: 6rem 0;
+}
+
+.inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5rem;
+  align-items: center;
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(34, 134, 58, 0.1);
+  border: 1px solid rgba(34, 134, 58, 0.2);
+  color: var(--green-primary);
+  padding: 0.35rem 0.9rem;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.heading {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  color: var(--text-dark);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.green {
+  color: var(--green-primary);
+}
+
+.body {
+  font-size: 1rem;
+  color: var(--text-mid);
+  line-height: 1.8;
+}
+
+.valuesGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.valueCard {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--white);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.valueCard:hover {
+  border-color: var(--green-accent);
+  transform: translateY(-2px);
+}
+
+.valueIcon {
+  font-size: 1.2rem;
+  color: var(--green-mid);
+}
+
+.valueLabel {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--green-primary);
+}
+
+/* Right */
+.right {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.estCard {
+  background: var(--green-primary);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.estCard::after {
+  content: '';
+  position: absolute;
+  right: -30px;
+  top: -30px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+}
+
+.estLabel {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(2.5rem, 6vw, 3.5rem);
+  font-weight: 800;
+  color: white;
+  display: block;
+  margin-bottom: 0.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.estSub {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.75);
+  position: relative;
+  z-index: 1;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.statCard {
+  background: var(--white);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.statNum {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--green-primary);
+}
+
+.statLabel {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  .inner {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+<<<<<<< Updated upstream:src/components/About.module.css
+}
+=======
+}
+>>>>>>> Stashed changes:src/app/components/About.module.css
