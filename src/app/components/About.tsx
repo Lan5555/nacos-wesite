@@ -126,12 +126,9 @@ export default function About() {
     </section>
   );
 }
-<<<<<<< Updated upstream:src/components/About.tsx
-=======
 
 
 
 
 
 
->>>>>>> Stashed changes:src/app/components/About.tsx
