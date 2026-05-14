@@ -2,7 +2,7 @@
 import { useState } from "react";
 import styles from "./Navbar.module.css";
 
-export default function Navbar() {
+const Navbar: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const navLinks = ["About", "Resources", "Excos", "Updates", "Results", "Events", "Contact"];
@@ -70,3 +70,5 @@ export default function Navbar() {
     </nav>
   );
 }
+
+export default Navbar;
