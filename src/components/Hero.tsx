@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-// import { CoreService } from "@/services/CoreService";
+import CoreService from "@/app/hooks/auth-controller";
 import styles from "./Hero.module.css";
 
 interface HeroData {
-  message?: string;
-  activeMembers?: number;
-  chapters?: number;
-  resources?: number;
+  totalUsers?: number;
+  totalEvents?: number;
 }
 
 const resourceLevels = [
@@ -20,23 +18,33 @@ const resourceLevels = [
 ];
 
 export default function Hero() {
-  // const [data, setData] = useState<HeroData | null>(null);
+     const [data, setData] = useState<HeroData | null>(null);
+     const [loading, setLoading] = useState(true);
 
-  // const service: CoreService = new CoreService();
+      const service = new CoreService();
 
-  // const fetchData = async () => {
-  //   try {
-  //     const result = await service.get<HeroData>("content/v1/hero");
-  //     setData(result);
-  //   } catch {
-  //     // Use default data when API is not available
-  //   }
-  // };
+      const fetchData = async () => {
+        try {
+          setLoading(true);
+          const [usersResult, eventsResult] = await Promise.all([
+            service.get("users/total-users"),
+            service.get("events/total-events"),
+          ]);
 
-  // useEffect(() => {
-  //   fetchData();
-  // }, []);
+          setData({
+            totalUsers: usersResult.data?.totalUsers,
+            totalEvents: eventsResult.data?.totalEvents,
+          });
+        } catch (error) {
+          console.error("fetchData error:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
 
+      useEffect(() => {
+        fetchData();
+      }, []);
   return (
     <section className={styles.hero} id="hero">
       <div className={styles.inner}>
@@ -70,7 +78,7 @@ export default function Hero() {
           <div className={styles.stats}>
             <div className={styles.statItem}>
               <span className={styles.statNum}>
-                   5,000+
+                    {loading ? "..." : data?.totalUsers ? `${data.totalUsers.toLocaleString()}+` : "5,000+"}
               </span>
               <span className={styles.statLabel}>Active Members</span>
             </div>
@@ -122,7 +130,9 @@ export default function Hero() {
                 <span className={styles.metricLabel}>Graduate Employment</span>
               </div>
               <div className={styles.metricCard}>
-                <span className={styles.metricNum}>120+</span>
+                <span className={styles.metricNum}>
+                      {loading ? "..." : data?.totalEvents ? `${data.totalEvents}+` : "200+"}
+                </span>
                 <span className={styles.metricLabel}>Annual Events</span>
               </div>
               <div className={styles.metricCard}>
