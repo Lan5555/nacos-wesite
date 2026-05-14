@@ -70,6 +70,13 @@ export default function AuthHero() {
 
                 </div>
             </div>
+            <footer className="relative z-10 mt-10 text-center text-xs text-white/30">
+                <p>&copy; {new Date().getFullYear()} NACOS Nigeria . 
+                    <span><a href="#" className="hover:text-green-400 transition-colors">Visit Website .</a> </span>
+                    <span><a href="#" className="hover:text-green-400 transition-colors">Privacy .</a> </span>
+                    <span><a href="#" className="hover:text-green-400 transition-colors">Support .</a> </span>
+                </p>
+            </footer>
         </section>
     )
 }
