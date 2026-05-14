@@ -23,7 +23,7 @@ export default function Hero() {
       const [data, setData] = useState<HeroData | null>(null);
       const [loading, setLoading] = useState(true);
 
-      const service = new CoreService();
+      const service:CoreService = new CoreService();
 
       const fetchData = async () => {
         try {
@@ -83,7 +83,6 @@ export default function Hero() {
             <div className={styles.statItem}>
               <span className={styles.statNum}>
                     {loading ? "..." : data?.totalUsers ? `${data.totalUsers.toLocaleString()}+` : "5,000+"}
-
               </span>
               <span className={styles.statLabel}>Active Members</span>
             </div>
