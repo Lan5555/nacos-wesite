@@ -90,9 +90,14 @@ const NacosLogin: React.FC = () => {
   }
 
   useEffect(() => {
-    if(loginId.length === 15) verifyMatNumber()
-  },[loginId]);
+  if (loginId.length !== 15) return;
 
+  const timer = setTimeout(() => {
+    verifyMatNumber();
+  }, 800);
+
+  return () => clearTimeout(timer);
+}, [loginId]);
 
   const handleSignup = (e:any) => {
     e.preventDefault();
