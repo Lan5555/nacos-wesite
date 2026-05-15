@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import CoreService from "@/app/hooks/auth-controller";
 import styles from "./Hero.module.css";
+import { useToast } from "@/app/providers/toast-provider";
 
 interface HeroData {
   totalUsers?: number;
@@ -18,33 +19,49 @@ const resourceLevels = [
   { label: "500 Level", count: 18, pct: 55 },
 ];
 
-export default function Hero() {
+interface HeroProps {
+  sharedData: (data: HeroData) => void;
+  isLoading: (loading: boolean) => void;
+}
+
+const Hero: React.FC<HeroProps> = ({ sharedData, isLoading }) => {
 
       const [data, setData] = useState<HeroData | null>(null);
       const [loading, setLoading] = useState(true);
-
-      const service = new CoreService();
+      const {showToast} = useToast();
+      const service:CoreService = new CoreService();
 
       const fetchData = async () => {
         try {
           setLoading(true);
+          isLoading(true);
           const [usersResult, eventsResult] = await Promise.all([
             service.get("users/total-users"),
             service.get("events/total-events"),
           ]);
+          // Always check the success status of each API call before using the data
+          if(usersResult.success && eventsResult.success) {
+            setData({
+            totalUsers: usersResult.data['totalUsers'],
+            totalEvents: eventsResult.data['totalEvents'],
+           });
 
-          setData({
-            totalUsers: usersResult.data?.totalUsers,
-            totalEvents: eventsResult.data?.totalEvents,
-          });
+            sharedData({
+              totalUsers: usersResult.data['totalUsers'],
+              totalEvents: eventsResult.data['totalEvents'],
+            });
+          } else {
+            showToast("Failed to load hero data. Please try again later.", "error");
+          }
         } catch (error) {
           console.error("fetchData error:", error);
+          showToast("Failed to load hero data. Please try again later.", "error");
         } finally {
           setLoading(false);
+          isLoading(false);
         }
       };
-
-
+      
       useEffect(() => {
         fetchData();
       }, []);
@@ -83,7 +100,6 @@ export default function Hero() {
             <div className={styles.statItem}>
               <span className={styles.statNum}>
                     {loading ? "..." : data?.totalUsers ? `${data.totalUsers.toLocaleString()}+` : "5,000+"}
-
               </span>
               <span className={styles.statLabel}>Active Members</span>
             </div>
@@ -155,3 +171,4 @@ export default function Hero() {
     </section>
   );
 }
+export default Hero;

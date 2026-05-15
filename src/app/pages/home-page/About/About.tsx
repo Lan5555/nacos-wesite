@@ -23,35 +23,12 @@ const values = [
   { icon: <Trophy size={20} />, label: "Integrity First" },
 ];
 
-export default function About() {
-  const [data, setData] = useState<AboutData | null>(null);
-  const [loading, setLoading] = useState(true);
+interface AboutProps {
+  data: any;
+  loading: boolean;
+}
 
-  const service: CoreService = new CoreService();
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [usersResult, eventsResult] = await Promise.all([
-        service.get("users/total-users"),
-        service.get("events/total-events"),
-      ]);
-
-      setData({
-        totalUsers: usersResult.data?.totalUsers,
-        totalEvents: eventsResult.data?.totalEvents,
-      });
-    } catch (error) {
-      console.error("fetchData error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
+const About: React.FC<AboutProps> = ({ data, loading }) => {
   return (
     <section className={styles.about} id="about">
       <div className={styles.inner}>
@@ -126,12 +103,9 @@ export default function About() {
     </section>
   );
 }
-<<<<<<< Updated upstream:src/components/About.tsx
-=======
+
+export default About;
 
 
 
 
-
-
->>>>>>> Stashed changes:src/app/components/About.tsx

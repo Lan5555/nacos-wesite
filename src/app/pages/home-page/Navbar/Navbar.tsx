@@ -1,10 +1,11 @@
 "use client";
-
 import { useState } from "react";
 import styles from "./Navbar.module.css";
+import { useRouter } from "next/navigation";
 
-export default function Navbar() {
+const Navbar: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const router = useRouter();
 
   const navLinks = ["About", "Resources", "Excos", "Updates", "Results", "Events", "Contact"];
 
@@ -33,8 +34,8 @@ export default function Navbar() {
 
         {/* CTA Buttons */}
         <div className={styles.navActions}>
-          <button className={styles.signIn}>Sign In</button>
-          <button className={styles.portal}>Student Portal →</button>
+          <button className={styles.signIn} onClick={() => router.push('/pages/login')}>Sign In</button>
+          <button className={styles.portal} onClick={() => router.push('/pages/login')}>Student Portal →</button>
         </div>
 
         {/* Mobile Hamburger */}
@@ -71,3 +72,5 @@ export default function Navbar() {
     </nav>
   );
 }
+
+export default Navbar;
