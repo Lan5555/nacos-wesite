@@ -1,6 +1,9 @@
 'use client';
 import { useToast } from '@/app/providers/toast-provider';
-import React, { FormEvent, useState } from 'react';
+import React, { FormEvent, useEffect, useState } from 'react';
+import {BookOpen,BarChart3,CalendarDays,Bell,Users,} from "lucide-react";
+
+
 
 const NacosLogin: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
@@ -61,8 +64,9 @@ const NacosLogin: React.FC = () => {
     e.preventDefault();
     showToast('Implement Sign in here','info');
   };
-
+  
   return (
+
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
       {/* LEFT PANEL */}
       <div className="hidden lg:flex flex-col justify-between bg-linear-to-br from-[#062206] via-[#0e3d0e] to-[#165716] p-12 relative overflow-hidden">
@@ -88,11 +92,11 @@ const NacosLogin: React.FC = () => {
 
           <div className="flex flex-col gap-3 mt-10">
             {[
-              { icon: '📚', text: 'Access 200+ study materials by level' },
-              { icon: '📊', text: 'View your semester results & GPA tracker' },
-              { icon: '🗓️', text: 'Register for events, workshops & hackathons' },
-              { icon: '🔔', text: 'Get real-time updates & exam notifications' },
-              { icon: '🤝', text: 'Connect with NACOS excos & peers' }
+              { icon: <BookOpen color='#72d872'/>, text: 'Access 200+ study materials by level' },
+              { icon: <BarChart3 color='#72d872' />, text: 'View your semester results & GPA tracker' },
+              { icon: <CalendarDays color='#72d872' />, text: 'Register for events, workshops & hackathons' },
+              { icon: <Bell color='#72d872' />, text: 'Get real-time updates & exam notifications' },
+              { icon: <Users color='#72d872' />, text: 'Connect with NACOS excos & peers' }
             ].map((feat, idx) => (
               <div key={idx} className="flex items-center gap-3 px-4 py-3 bg-white/5 border border-white/8 rounded-xl backdrop-blur-sm">
                 <span className="text-base">{feat.icon}</span>
@@ -187,7 +191,7 @@ const NacosLogin: React.FC = () => {
               
 
               <div className="text-right -mt-2 mb-4">
-                <a href="/pages/login/forgot-password" className="text-[0.8rem] font-semibold text-[#1e7a1e] no-underline hover:underline">Forgot password?</a>
+                <a href="/pages/login/reset-password" className="text-[0.8rem] font-semibold text-[#1e7a1e] no-underline hover:underline">Forgot password?</a>
               </div>
 
               <button type="submit" className="w-full py-3 rounded-xl bg-[#1e7a1e] text-white text-[0.95rem] font-bold border-none cursor-pointer hover:bg-[#165716] transition-all hover:-translate-y-px hover:shadow-lg hover:shadow-[#1e7a1e]/25 mt-2">

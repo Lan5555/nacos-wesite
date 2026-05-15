@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { ShieldCheck, Mail, Clock3 } from "lucide-react";
+
 
 const ForgotPassword:React.FC = () => {
   const [email, setEmail] = useState('');
@@ -51,15 +53,15 @@ const ForgotPassword:React.FC = () => {
 
           <div className="flex flex-col gap-3 mt-10">
             <div className="flex items-center gap-3 px-4 py-3 bg-white/5 border border-white/8 rounded-xl backdrop-blur-sm">
-              <span className="text-base">🔐</span>
+              <span className="text-base"><ShieldCheck color='#72d872' /></span>
               <span className="text-[0.85rem] text-white/70 font-medium">Secure password reset process</span>
             </div>
             <div className="flex items-center gap-3 px-4 py-3 bg-white/5 border border-white/8 rounded-xl backdrop-blur-sm">
-              <span className="text-base">📧</span>
+              <span className="text-base"><Mail color='#72d872' /></span>
               <span className="text-[0.85rem] text-white/70 font-medium">Reset link sent to your registered email</span>
             </div>
             <div className="flex items-center gap-3 px-4 py-3 bg-white/5 border border-white/8 rounded-xl backdrop-blur-sm">
-              <span className="text-base">⏱️</span>
+              <span className="text-base"><Clock3 color='#72d872' /></span>
               <span className="text-[0.85rem] text-white/70 font-medium">Link expires in 1 hour for security</span>
             </div>
           </div>
