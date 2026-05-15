@@ -2,7 +2,9 @@
 import CoreService from '@/app/hooks/auth-controller';
 import { useToast } from '@/app/providers/toast-provider';
 import { useRouter } from 'next/navigation';
-import React, { FormEvent, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+
+const coreService: CoreService = new CoreService();
 
 const NacosLogin: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
@@ -24,8 +26,7 @@ const NacosLogin: React.FC = () => {
   const [signupPw, setSignupPw] = useState('');
   const [showSignupPw, setShowSignupPw] = useState(false);
   const [pwStrength, setPwStrength] = useState({ score: 0, text: 'Enter a password', color: '#6a8a6a' });
-  const coreService: CoreService = new CoreService();
-
+  
   const universities = [
     'University of Nigeria, Nsukka',
     'University of Lagos',

@@ -37,9 +37,7 @@ export default function Resources() {
   try {
     setLoading(true);
     
-    const result = await service.get(
-      "courses/find-all-courses?department=Computer Science"
-    );
+    const result = await service.get("courses/find-all-courses");
 
     const allCourses: Resource[] = result.data ?? [];
 
