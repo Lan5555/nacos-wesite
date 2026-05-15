@@ -1,10 +1,13 @@
 'use client';
+import CoreService from '@/app/hooks/auth-controller';
 import { useToast } from '@/app/providers/toast-provider';
-import React, { FormEvent, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import React, { FormEvent, useEffect, useState } from 'react';
 
 const NacosLogin: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const {showToast} = useToast();
+  const router = useRouter();
   // Login form state
   const [loginId, setLoginId] = useState('');
   const [loginPw, setLoginPw] = useState('');
@@ -21,6 +24,7 @@ const NacosLogin: React.FC = () => {
   const [signupPw, setSignupPw] = useState('');
   const [showSignupPw, setShowSignupPw] = useState(false);
   const [pwStrength, setPwStrength] = useState({ score: 0, text: 'Enter a password', color: '#6a8a6a' });
+  const coreService: CoreService = new CoreService();
 
   const universities = [
     'University of Nigeria, Nsukka',
@@ -52,10 +56,43 @@ const NacosLogin: React.FC = () => {
     });
   };
 
-  const handleLogin = (e:any) => {
+  const handleLogin = async(e:any) => {
     e.preventDefault();
-    showToast("Login functionality is not implemented yet. This is just a demo.", "info");
+    //showToast("Login functionality is not implemented yet. This is just a demo.", "info");
+    const payload = {
+      "mat_no": loginId,
+      "password": loginPw,
+    }
+    try{
+      const res = await coreService.send('users/login', payload);
+      if(res.success){
+        showToast(res.message || 'Login successful','success');
+      }else{
+        showToast(res.message || 'Login failed. Please check your credentials and try again.','error');
+      }
+    }catch(err){
+        showToast('Login failed. Please check your credentials and try again.','error');
+    }
   };
+
+  const verifyMatNumber = async() => {
+      try{
+        const res =  await coreService.get(`users/verify-mat-no?mat_no=${loginId}`);
+        if(res.success && res.data != null){
+          showToast('Create a new Password');
+          router.push('/pages/login/reset-password');
+        }else{
+
+        }
+      }catch(e:any){
+        showToast(e.message);
+      }
+  }
+
+  useEffect(() => {
+    if(loginId.length === 15) verifyMatNumber()
+  },[loginId]);
+
 
   const handleSignup = (e:any) => {
     e.preventDefault();
