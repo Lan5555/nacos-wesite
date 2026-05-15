@@ -2,10 +2,12 @@
 import { useState } from "react";
 import styles from "./Navbar.module.css";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/app/providers/toast-provider";
 
 const Navbar: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
+  const {showToast} = useToast();
 
   const navLinks = ["About", "Resources", "Excos", "Updates", "Results", "Events", "Contact"];
 
@@ -34,7 +36,12 @@ const Navbar: React.FC = () => {
 
         {/* CTA Buttons */}
         <div className={styles.navActions}>
-          <button className={styles.signIn} onClick={() => router.push('/pages/login')}>Sign In</button>
+          <button className={styles.signIn} onClick={() => {
+            alert("Redirecting to login page...");
+            showToast("Redirecting to login page...");
+            router.push('/pages/login')
+
+          }}>Sign In</button>
           <button className={styles.portal} onClick={() => router.push('/pages/login')}>Student Portal →</button>
         </div>
 
