@@ -34,7 +34,10 @@ const Navbar: React.FC = () => {
 
         {/* CTA Buttons */}
         <div className={styles.navActions}>
-          <button className={styles.signIn} onClick={() => router.push('/pages/login')}>Sign In</button>
+          <button className={styles.signIn} onClick={() => {
+            router.push('/pages/login')
+
+          }}>Sign In</button>
           <button className={styles.portal} onClick={() => router.push('/pages/login')}>Student Portal →</button>
         </div>
 
