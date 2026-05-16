@@ -135,7 +135,8 @@ private setAuthHeader(headers: HeadersInit = {}) {
 
 public async upload(
     endpoint: string,
-    data: Record<string, any>
+    data: Record<string, any>,
+    method: string = "POST"
 ): Future {
     try {
         const formData =
@@ -144,7 +145,7 @@ public async upload(
         const response = await fetch(
             `${this.BASE_URL}/${endpoint}`,
             {
-                method: "POST",
+                method: method,
                 body: formData,
                 headers:this.setAuthHeader({
                 "Content-Type": "application/json"

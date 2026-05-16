@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import CoreService from '@/app/hooks/core-service';
+
 
 interface Exco {
   id: string;
@@ -23,51 +25,11 @@ interface FormErrors {
   [key: string]: string;
 }
 
-export default function ExcosManagement() {
-  const [excos, setExcos] = useState<Exco[]>([
-    {
-      id: '1',
-      name: 'Nicholas Okeje',
-      level: 400,
-      isStaff: false,
-      password: '123456',
-      email: 'okekejohnson24@gmail.com',
-      department: 'Computer Science',
-      position: 'President',
-      phone: '+234 812 345 6789',
-      profileImage: '',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      level: 300,
-      isStaff: false,
-      password: 'password123',
-      email: 'sarah.johnson@example.com',
-      department: 'Computer Science',
-      position: 'Vice President',
-      phone: '+234 812 345 6790',
-      profileImage: '',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: '3',
-      name: 'Dr. Adebayo Ogunlesi',
-      level: 0,
-      isStaff: true,
-      password: 'staff123',
-      email: 'a.ogunlesi@university.edu.ng',
-      department: 'Computer Science',
-      position: 'Faculty Advisor',
-      phone: '+234 812 345 6791',
-      profileImage: '',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-  ]);
+const service:CoreService = new CoreService();
+
+export const ExcosManagement = () => {
+  const [excos, setExcos] = useState<Exco[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -102,8 +64,8 @@ export default function ExcosManagement() {
 
   const departments = [
     'Computer Science',
-    'Information Technology',
     'Software Engineering',
+    'Information Technology',
     'Cyber Security',
     'Data Science',
     'Information Systems'
@@ -112,18 +74,37 @@ export default function ExcosManagement() {
   const positions = [
     'President',
     'Vice President',
-    'General Secretary',
-    'Assistant Secretary',
+    'Secretary General',
+    'Welfare Secretary',
     'Treasurer',
     'Financial Secretary',
     'Public Relations Officer',
     'Director of Academics',
-    'Director of Events',
+    'Director of Socials',
     'Director of Sports',
     'Director of Welfare',
-    'Faculty Advisor',
+    'Auditor General',
     'Technical Director'
   ];
+
+  
+  const fetchExcos = async () => {
+    try {
+      setPageLoading(true);
+      const result = await service.get("admin/find-all");
+      if (result.success) {
+        setExcos(result.data ?? []);
+      }
+    } catch (error) {
+      console.error("fetchExcos error:", error);
+    } finally {
+      setPageLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchExcos();
+  }, []);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -188,12 +169,10 @@ export default function ExcosManagement() {
         setFormErrors(prev => ({ ...prev, profileImage: 'Image must be less than 5MB' }));
         return;
       }
-
       if (!file.type.startsWith('image/')) {
         setFormErrors(prev => ({ ...prev, profileImage: 'Please upload an image file' }));
         return;
       }
-
       setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -204,17 +183,14 @@ export default function ExcosManagement() {
     }
   }, []);
 
+  
   const handleAddExco = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
-
     setLoading(true);
-    setSuccessMessage('');
 
-    setTimeout(() => {
-      const newExco: Exco = {
-        id: Date.now().toString(),
+    try {
+      const createResult = await service.send("admin/create-admin", {
         name: formData.name.trim(),
         level: formData.isStaff ? 0 : formData.level,
         isStaff: formData.isStaff,
@@ -223,19 +199,44 @@ export default function ExcosManagement() {
         department: formData.department,
         position: formData.position,
         phone: formData.phone.trim(),
-        profileImage: profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=10b981&color=fff`,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+      });
 
-      setExcos(prev => [newExco, ...prev]);
+      if (!createResult.success) {
+        console.error("Create failed:", createResult.message, createResult);
+        return;
+      }
+
+      const newId = createResult.data?.id ?? createResult.data?._id;
+      if (!newId) {
+        console.error("Create succeeded but returned no id:", createResult);
+        return;
+      }
+
+      if (imageFile && newId) {
+        const uploadResult = await service.upload(`admin/update/${newId}`, {
+          file: imageFile,
+        }, "PATCH");
+        console.log("add image upload result:", uploadResult);
+        if (!uploadResult.success) {
+          setFormErrors(prev => ({ ...prev, profileImage: `Image upload failed: ${uploadResult.message || 'Unknown error'}` }));
+          console.error("Image upload failed:", uploadResult);
+          setLoading(false);
+          return;
+        }
+      }
+
+      await fetchExcos();
       setSuccessMessage('Exco member added successfully!');
       resetForm();
       setShowAddModal(false);
       setTimeout(() => setSuccessMessage(''), 3000);
+
+    } catch (error) {
+      console.error("handleAddExco error:", error);
+    } finally {
       setLoading(false);
-    }, 500);
-  }, [formData, profileImage, excos, editingExco]);
+    }
+  }, [formData, imageFile]);
 
   const handleEditExco = useCallback((exco: Exco) => {
     setEditingExco(exco);
@@ -251,61 +252,84 @@ export default function ExcosManagement() {
       phone: exco.phone || ''
     });
     setProfileImage(exco.profileImage || '');
+    setImageFile(null);
     setFormErrors({});
     setShowAddModal(true);
   }, []);
 
+  
   const handleUpdateExco = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
-
     setLoading(true);
-    setSuccessMessage('');
 
-    setTimeout(() => {
-      const updatedExcos = excos.map(exco => 
-        exco.id === editingExco?.id 
-          ? {
-              ...exco,
-              name: formData.name.trim(),
-              level: formData.isStaff ? 0 : formData.level,
-              isStaff: formData.isStaff,
-              email: formData.email.trim().toLowerCase(),
-              department: formData.department,
-              position: formData.position,
-              phone: formData.phone.trim(),
-              profileImage: profileImage || exco.profileImage,
-              ...(formData.password && { password: formData.password }),
-              updatedAt: new Date()
-            }
-          : exco
-      );
-      setExcos(updatedExcos);
+    try {
+      await service.patch(`admin/update/${editingExco?.id}`, {
+        name: formData.name.trim(),
+        level: formData.isStaff ? 0 : formData.level,
+        isStaff: formData.isStaff,
+        email: formData.email.trim().toLowerCase(),
+        department: formData.department,
+        position: formData.position,
+        phone: formData.phone.trim(),
+        ...(formData.password && { password: formData.password }),
+      });
+
+      if (imageFile && editingExco?.id) {
+        const uploadResult = await service.upload(`admin/update/${editingExco.id}`, {
+          file: imageFile,
+        }, "PATCH");
+        console.log("update image upload result:", uploadResult);
+        if (!uploadResult.success) {
+          setFormErrors(prev => ({ ...prev, profileImage: `Image upload failed: ${uploadResult.message || 'Unknown error'}` }));
+          console.error("Image upload failed:", uploadResult);
+          setLoading(false);
+          return;
+        }
+      }
+
+      await fetchExcos();
       setSuccessMessage('Exco member updated successfully!');
       resetForm();
       setShowAddModal(false);
       setEditingExco(null);
       setTimeout(() => setSuccessMessage(''), 3000);
-      setLoading(false);
-    }, 500);
-  }, [formData, profileImage, excos, editingExco]);
 
-  const handleDeleteExco = useCallback(() => {
-    if (selectedExco) {
-      setExcos(prev => prev.filter(exco => exco.id !== selectedExco.id));
+    } catch (error) {
+      console.error("handleUpdateExco error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [formData, imageFile, editingExco]);
+
+  
+  const handleDeleteExco = useCallback(async () => {
+    if (!selectedExco) return;
+    try {
+      await service.delete(`admin/delete/${selectedExco.id}`);
+      await fetchExcos();
       setSuccessMessage(`${selectedExco.name} has been removed from the team.`);
       setShowDeleteModal(false);
       setSelectedExco(null);
       setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error("handleDeleteExco error:", error);
     }
   }, [selectedExco]);
 
-  const handleBulkDelete = useCallback(() => {
-    setExcos(prev => prev.filter(e => !selectedExcos.includes(e.id)));
-    setSuccessMessage(`${selectedExcos.length} members have been removed.`);
-    setSelectedExcos([]);
-    setTimeout(() => setSuccessMessage(''), 3000);
+
+  const handleBulkDelete = useCallback(async () => {
+    try {
+      await Promise.all(
+        selectedExcos.map(id => service.delete(`admin/delete/${id}`))
+      );
+      await fetchExcos();
+      setSuccessMessage(`${selectedExcos.length} members have been removed.`);
+      setSelectedExcos([]);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error("handleBulkDelete error:", error);
+    }
   }, [selectedExcos]);
 
   const resetForm = useCallback(() => {
@@ -363,7 +387,7 @@ export default function ExcosManagement() {
           return (a.position || '').localeCompare(b.position || '');
         case 'date':
         default:
-          return (b.updatedAt || b.createdAt).getTime() - (a.updatedAt || a.createdAt).getTime();
+          return (new Date(b.updatedAt || b.createdAt)).getTime() - (new Date(a.updatedAt || a.createdAt)).getTime();
       }
     });
 
@@ -636,8 +660,14 @@ export default function ExcosManagement() {
             </div>
           )}
 
-          {/* Members Grid/List */}
-          {filteredAndSortedExcos.length > 0 ? (
+          
+           {/* Members Grid/List */}
+          {pageLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <div className="w-12 h-12 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
+              <p className="text-slate-500 text-sm font-medium">Loading members...</p>
+            </div>
+          ) : filteredAndSortedExcos.length > 0 ? (
             viewMode === 'grid' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredAndSortedExcos.map((exco, idx) => (
@@ -1013,7 +1043,7 @@ export default function ExcosManagement() {
                     onChange={(e) => setFormData({ ...formData, level: parseInt(e.target.value) })}
                     className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
                   >
-                    {[100, 200, 300, 400, 500].map(level => <option key={level} value={level}>{level} Level</option>)}
+                    {[100, 200, 300, 400].map(level => <option key={level} value={level}>{level} Level</option>)}
                   </select>
                 </div>
               )}
