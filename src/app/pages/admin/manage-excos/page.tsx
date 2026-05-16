@@ -4,6 +4,7 @@ import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import Image from 'next/image';
 import Link from 'next/link';
 import CoreService from '@/app/hooks/core-service';
+import { useToast } from '@/app/providers/toast-provider';
 
 
 interface Exco {
@@ -61,6 +62,7 @@ export const ExcosManagement = () => {
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [successMessage, setSuccessMessage] = useState('');
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const {showToast} = useToast();
 
   const departments = [
     'Computer Science',
@@ -95,8 +97,9 @@ export const ExcosManagement = () => {
       if (result.success) {
         setExcos(result.data ?? []);
       }
-    } catch (error) {
+    } catch (error:any) {
       console.error("fetchExcos error:", error);
+      showToast(error.message,'error');
     } finally {
       setPageLoading(false);
     }
@@ -202,12 +205,14 @@ export const ExcosManagement = () => {
       });
 
       if (!createResult.success) {
+        showToast(createResult.message,'error');
         console.error("Create failed:", createResult.message, createResult);
         return;
       }
 
       const newId = createResult.data?.id ?? createResult.data?._id;
       if (!newId) {
+        showToast('Create succeeded but returned no id','error');
         console.error("Create succeeded but returned no id:", createResult);
         return;
       }
@@ -216,12 +221,17 @@ export const ExcosManagement = () => {
         const uploadResult = await service.upload(`admin/update/${newId}`, {
           file: imageFile,
         }, "PATCH");
+        
         console.log("add image upload result:", uploadResult);
         if (!uploadResult.success) {
           setFormErrors(prev => ({ ...prev, profileImage: `Image upload failed: ${uploadResult.message || 'Unknown error'}` }));
           console.error("Image upload failed:", uploadResult);
+          showToast(uploadResult.message,'error');
           setLoading(false);
           return;
+        }else{
+          showToast(uploadResult.message,'success');
+        
         }
       }
 
@@ -231,7 +241,8 @@ export const ExcosManagement = () => {
       setShowAddModal(false);
       setTimeout(() => setSuccessMessage(''), 3000);
 
-    } catch (error) {
+    } catch (error:any) {
+      showToast(error.message,'error');
       console.error("handleAddExco error:", error);
     } finally {
       setLoading(false);
@@ -264,7 +275,7 @@ export const ExcosManagement = () => {
     setLoading(true);
 
     try {
-      await service.patch(`admin/update/${editingExco?.id}`, {
+     const res = await service.patch(`admin/update/${editingExco?.id}`, {
         name: formData.name.trim(),
         level: formData.isStaff ? 0 : formData.level,
         isStaff: formData.isStaff,
@@ -274,6 +285,11 @@ export const ExcosManagement = () => {
         phone: formData.phone.trim(),
         ...(formData.password && { password: formData.password }),
       });
+      if(!res.success){
+        showToast(res.message,'error');
+        console.log(res.message);
+        return;
+      }
 
       if (imageFile && editingExco?.id) {
         const uploadResult = await service.upload(`admin/update/${editingExco.id}`, {
@@ -283,8 +299,11 @@ export const ExcosManagement = () => {
         if (!uploadResult.success) {
           setFormErrors(prev => ({ ...prev, profileImage: `Image upload failed: ${uploadResult.message || 'Unknown error'}` }));
           console.error("Image upload failed:", uploadResult);
+          showToast(uploadResult.message,'error');
           setLoading(false);
           return;
+        }else{
+          showToast(uploadResult.message,'success');
         }
       }
 
@@ -306,12 +325,17 @@ export const ExcosManagement = () => {
   const handleDeleteExco = useCallback(async () => {
     if (!selectedExco) return;
     try {
-      await service.delete(`admin/delete/${selectedExco.id}`);
+      const res = await service.delete(`admin/delete/${selectedExco.id}`);
+      if(res.success){
       await fetchExcos();
       setSuccessMessage(`${selectedExco.name} has been removed from the team.`);
       setShowDeleteModal(false);
       setSelectedExco(null);
       setTimeout(() => setSuccessMessage(''), 3000);
+      }else{
+        showToast(res.message,'error');
+        console.log(res.message)
+      }
     } catch (error) {
       console.error("handleDeleteExco error:", error);
     }
@@ -320,13 +344,18 @@ export const ExcosManagement = () => {
 
   const handleBulkDelete = useCallback(async () => {
     try {
-      await Promise.all(
+      const res = await Promise.all(
         selectedExcos.map(id => service.delete(`admin/delete/${id}`))
       );
+      if(res.every((e) => e.success)){
+
       await fetchExcos();
       setSuccessMessage(`${selectedExcos.length} members have been removed.`);
       setSelectedExcos([]);
       setTimeout(() => setSuccessMessage(''), 3000);
+      }else{
+        showToast(res[0].message,'error')
+      }
     } catch (error) {
       console.error("handleBulkDelete error:", error);
     }
@@ -1110,3 +1139,4 @@ export const ExcosManagement = () => {
     </div>
   );
 }
+export default ExcosManagement;
