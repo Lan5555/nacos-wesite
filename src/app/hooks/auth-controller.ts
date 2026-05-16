@@ -85,6 +85,65 @@ class CoreService {
         }
         return { success: false, message: "An error occurred" };
     }
+
+
+    private objectToFormData(
+    data: Record<string, any>
+): FormData {
+    const formData = new FormData();
+
+    Object.entries(data).forEach(([key, value]) => {
+        if (value instanceof File) {
+            formData.append(key, value);
+        } else if (value instanceof Blob) {
+            formData.append(key, value);
+        } else if (Array.isArray(value)) {
+            value.forEach((item) => {
+                formData.append(key, item);
+            });
+        } else if (
+            value !== null &&
+            value !== undefined
+        ) {
+            formData.append(key, String(value));
+        }
+    });
+
+    return formData;
+}
+
+public async upload(
+    endpoint: string,
+    data: Record<string, any>,
+    method: string = "POST"
+): Future {
+    try {
+        const formData =
+            this.objectToFormData(data);
+
+        const response = await fetch(
+            `${this.BASE_URL}/${endpoint}`,
+            {
+                method: method,
+                body: formData,
+                headers:this.setAuthHeader({
+                "Content-Type": "application/json"
+            })
+            }
+        );
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.log(error);
+    }
+
+    return {
+        success: false,
+        message: "An error occurred",
+    };
+}
+
 }
 
 export default CoreService;
