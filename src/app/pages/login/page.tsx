@@ -1,5 +1,5 @@
 'use client';
-import CoreService from '@/app/hooks/auth-controller';
+import CoreService from '@/app/hooks/core-service';
 import { useToast } from '@/app/providers/toast-provider';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
