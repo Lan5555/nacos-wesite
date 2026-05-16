@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import CoreService from "@/app/hooks/auth-controller";
+import CoreService from "@/app/hooks/core-service";
 import styles from "./Hero.module.css";
 import { useToast } from "@/app/providers/toast-provider";
 
