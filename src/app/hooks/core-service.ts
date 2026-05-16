@@ -12,14 +12,33 @@ class CoreService {
         this.BASE_URL = url;
     }
 
+    private getToken(): string | null {
+    return localStorage.getItem('token');
+}
+
+private setAuthHeader(headers: HeadersInit = {}) {
+    const token = this.getToken();
+
+    if (token) {
+        return {
+            ...headers,
+            Authorization: `Bearer ${token}`,
+        };
+    }
+
+    return headers;
+}
+
 
     public async send(endpoint: string, data: Record<string, any>): Future {
+        const token = this.getToken();
+        
         try {
         const response = await fetch(`${this.BASE_URL}/${endpoint}`, {
             method: "POST",
-            headers: {
+            headers: this.setAuthHeader({
                 "Content-Type": "application/json"
-            },
+            }),
             body: JSON.stringify(data)
         });
 
@@ -33,7 +52,9 @@ class CoreService {
 
     public async get(endpoint: string): Future {
         try {
-            const response = await fetch(`${this.BASE_URL}/${endpoint}`);
+            const response = await fetch(`${this.BASE_URL}/${endpoint}`,{
+                headers: this.setAuthHeader()
+            });
             const result = await response.json();
             return result;
         } catch (error) {
@@ -45,9 +66,9 @@ class CoreService {
         try {
             const response = await fetch(`${this.BASE_URL}/${endpoint}`, {
                 method: "PUT",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers:this.setAuthHeader({
+                "Content-Type": "application/json"
+            }),
                 body: JSON.stringify(data)
             });
             const result = await response.json();
@@ -60,7 +81,8 @@ class CoreService {
     public async delete(endpoint: string): Future {
         try {
             const response = await fetch(`${this.BASE_URL}/${endpoint}`, {
-                method: "DELETE"
+                method: "DELETE",
+                headers:this.setAuthHeader()
             });
             const result = await response.json();
             return result;
@@ -73,9 +95,9 @@ class CoreService {
         try {
             const response = await fetch(`${this.BASE_URL}/${endpoint}`, {
                 method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: this.setAuthHeader({
+                "Content-Type": "application/json"
+                 }),
                 body: JSON.stringify(data)
             });
             const result = await response.json();
@@ -124,6 +146,9 @@ public async upload(
             {
                 method: "POST",
                 body: formData,
+                headers:this.setAuthHeader({
+                "Content-Type": "application/json"
+            })
             }
         );
 
