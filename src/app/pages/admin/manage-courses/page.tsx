@@ -4,6 +4,7 @@ import {
   Plus, FileText, Upload, X, Search, Edit2, Trash2,
   BookOpen, FolderOpen, Download, CheckCircle, AlertCircle
 } from 'lucide-react';
+import Validator from '@/app/validators/auth-validator';
 
 // Types based on schema
 interface Course {
@@ -576,6 +577,7 @@ function App() {
           to { opacity: 1; transform: scale(1); }
         }
       `}</style>
+      <Validator/>
     </div>
   );
 }

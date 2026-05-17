@@ -105,7 +105,7 @@ const NacosLogin: React.FC = () => {
     e.preventDefault();
     showToast('Implement Sign in here','info');
   };
-  
+
   return (
 
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden">

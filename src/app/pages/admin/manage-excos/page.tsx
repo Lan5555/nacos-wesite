@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import CoreService from '@/app/hooks/core-service';
 import { useToast } from '@/app/providers/toast-provider';
+import Validator from '@/app/validators/auth-validator';
 
 
 interface Exco {
@@ -1116,6 +1117,7 @@ export const ExcosManagement = () => {
               </div>
             </div>
           </div>
+          
         </div>
       )}
 
@@ -1136,6 +1138,7 @@ export const ExcosManagement = () => {
         .animate-fade-in { animation: fade-in 0.5s ease-out forwards; opacity: 0; }
         .animate-modal-in { animation: modal-in 0.3s ease-out; }
       `}</style>
+      <Validator/>
     </div>
   );
 }
