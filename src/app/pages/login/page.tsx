@@ -4,6 +4,8 @@ import { useToast } from '@/app/providers/toast-provider';
 import React, { FormEvent, useEffect, useState } from 'react';
 import {BookOpen,BarChart3,CalendarDays,Bell,Users,} from "lucide-react";
 import { useRouter } from 'next/navigation';
+import { FaRegEyeSlash,FaRegEye } from "react-icons/fa6";
+
 
 
 const coreService:CoreService = new CoreService();
@@ -224,7 +226,7 @@ const NacosLogin: React.FC = () => {
                     onClick={() => setShowLoginPw(!showLoginPw)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-[#6a8a6a] text-sm select-none"
                   >
-                    {showLoginPw ? '🙈' : '👁'}
+                    {showLoginPw ? <FaRegEyeSlash /> : <FaRegEye />}
                   </span>
                 </div>
               </div>
