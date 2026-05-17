@@ -13,6 +13,7 @@ class AuthValidator {
   }
 }
 
+
 const validator = new AuthValidator();
 
 const Validator: React.FC = () => {

@@ -6,6 +6,8 @@ import Link from 'next/link';
 import CoreService from '@/app/hooks/core-service';
 import { useToast } from '@/app/providers/toast-provider';
 import Validator from '@/app/validators/auth-validator';
+import { User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 
 interface Exco {
@@ -31,18 +33,22 @@ const service:CoreService = new CoreService();
 
 export const ExcosManagement = () => {
   const [excos, setExcos] = useState<Exco[]>([]);
-  const [pageLoading, setPageLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedExco, setSelectedExco] = useState<Exco | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'student' | 'staff'>('all');
+  const router = useRouter();
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'name' | 'position' | 'date'>('date');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [editingExco, setEditingExco] = useState<Exco | null>(null);
   const [selectedExcos, setSelectedExcos] = useState<string[]>([]);
+
+  //Logged In Exco
+  const [activeExco, setActiveExco] = useState<Partial<Exco> | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -92,23 +98,41 @@ export const ExcosManagement = () => {
 
   
   const fetchExcos = async () => {
-    try {
-      setPageLoading(true);
-      const result = await service.get("admin/find-all");
-      if (result.success) {
-        setExcos(result.data ?? []);
-      }
-    } catch (error:any) {
-      console.error("fetchExcos error:", error);
-      showToast(error.message,'error');
-    } finally {
-      setPageLoading(false);
+  // Only show the full-page loader if we don't have any data yet
+  if (excos.length === 0) {
+    setPageLoading(true);
+  }
+
+  try {
+    const result = await service.get("admin/find-all");
+
+    if (result?.success) {
+      setExcos(result.data ?? []);
+    } else {
+      setExcos([]);
     }
-  };
+
+    const exco = sessionStorage.getItem('admin');
+    if (exco) {
+      setActiveExco(JSON.parse(exco));
+    }
+
+  } catch (error) {
+    console.error("fetchExcos error:", error);
+    setExcos([]); 
+    showToast("Failed to load data", "error");
+
+  } finally {
+    setPageLoading(false); 
+  }
+};
+
+
 
   useEffect(() => {
     fetchExcos();
   }, []);
+
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -475,11 +499,19 @@ export const ExcosManagement = () => {
               {/* User Menu */}
               <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
                 <div className="text-right hidden sm:block">
-                  <p className="text-sm font-semibold text-slate-800">Admin User</p>
+                  <p className="text-sm font-semibold text-slate-800">{activeExco?.name || 'Guest'}</p>
                   <p className="text-xs text-slate-500">Administrator</p>
                 </div>
                 <div className="w-9 h-9 rounded-full bg-linear-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-semibold shadow-md">
-                  A
+                  {activeExco?.profileImage ? (
+                    <img
+                      src={activeExco.profileImage}
+                      alt={activeExco.name!}
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <User></User>)}
+                
                 </div>
               </div>
             </div>
