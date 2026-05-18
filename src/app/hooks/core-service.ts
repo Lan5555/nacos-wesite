@@ -147,9 +147,7 @@ public async upload(
             {
                 method: method,
                 body: formData,
-                headers:this.setAuthHeader({
-                "Content-Type": "application/json"
-            })
+                headers:this.setAuthHeader()
             }
         );
 

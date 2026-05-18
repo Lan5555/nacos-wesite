@@ -67,7 +67,7 @@ const departments = [
   'Data Science'
 ];
 
-function App() {
+const CourseManagement: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>(initialCourses);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
@@ -225,7 +225,7 @@ function App() {
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-11 h-11 bg-linear-to-br from-emerald-600 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-11 h-11 bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] rounded-xl flex items-center justify-center shadow-lg border border-white/10">
                 <BookOpen className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -237,7 +237,7 @@ function App() {
             </div>
             <button
               onClick={() => handleOpenModal()}
-              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-all shadow-md hover:shadow-lg"
+              className="flex items-center gap-2 px-5 py-2.5 bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white rounded-xl font-medium transition-all shadow-md hover:shadow-lg border border-[#0e2d3d]/50"
             >
               <Plus size={18} />
               Add Course
@@ -582,4 +582,4 @@ function App() {
   );
 }
 
-export default App;
+export default CourseManagement;

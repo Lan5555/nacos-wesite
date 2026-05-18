@@ -8,9 +8,10 @@ import { useToast } from '@/app/providers/toast-provider';
 import Validator from '@/app/validators/auth-validator';
 import { User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { BiArrowBack } from 'react-icons/bi';
 
 
-interface Exco {
+export interface Exco {
   id: string;
   name: string;
   level: number;
@@ -30,8 +31,12 @@ interface FormErrors {
 }
 
 const service:CoreService = new CoreService();
+interface Props{
+  activeExco:Partial<Exco> | null;
+}
 
-export const ExcosManagement = () => {
+
+export const ExcosManagement:React.FC<Props> = ({activeExco}) => {
   const [excos, setExcos] = useState<Exco[]>([]);
   const [pageLoading, setPageLoading] = useState(false);
 
@@ -46,9 +51,10 @@ export const ExcosManagement = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [editingExco, setEditingExco] = useState<Exco | null>(null);
   const [selectedExcos, setSelectedExcos] = useState<string[]>([]);
+ 
 
-  //Logged In Exco
-  const [activeExco, setActiveExco] = useState<Partial<Exco> | null>(null);
+  // //Logged In Exco
+  // const [activeExco, setActiveExco] = useState<Partial<Exco> | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -93,7 +99,8 @@ export const ExcosManagement = () => {
     'Director of Sports',
     'Director of Welfare',
     'Auditor General',
-    'Technical Director'
+    'Director of Tech and Innovation',
+    'Other'
   ];
 
   
@@ -111,12 +118,6 @@ export const ExcosManagement = () => {
     } else {
       setExcos([]);
     }
-
-    const exco = sessionStorage.getItem('admin');
-    if (exco) {
-      setActiveExco(JSON.parse(exco));
-    }
-
   } catch (error) {
     console.error("fetchExcos error:", error);
     setExcos([]); 
@@ -300,21 +301,22 @@ export const ExcosManagement = () => {
     setLoading(true);
 
     try {
-     const res = await service.patch(`admin/update/${editingExco?.id}`, {
-        name: formData.name.trim(),
-        level: formData.isStaff ? 0 : formData.level,
-        isStaff: formData.isStaff,
-        email: formData.email.trim().toLowerCase(),
-        department: formData.department,
-        position: formData.position,
-        phone: formData.phone.trim(),
-        ...(formData.password && { password: formData.password }),
-      });
-      if(!res.success){
-        showToast(res.message,'error');
-        console.log(res.message);
-        return;
-      }
+     
+        const res = await service.patch(`admin/update/${editingExco?.id}`, {
+          name: formData.name.trim(),
+          level: formData.isStaff ? 0 : formData.level,
+          isStaff: formData.isStaff,
+          email: formData.email.trim().toLowerCase(),
+          department: formData.department,
+          position: formData.position,
+          phone: formData.phone.trim(),
+          ...(formData.password && { password: formData.password }),
+        });
+        if(!res.success){
+          showToast(res.message,'error');
+          setLoading(false);
+          return;
+        }
 
       if (imageFile && editingExco?.id) {
         const uploadResult = await service.upload(`admin/update/${editingExco.id}`, {
@@ -339,7 +341,8 @@ export const ExcosManagement = () => {
       setEditingExco(null);
       setTimeout(() => setSuccessMessage(''), 3000);
 
-    } catch (error) {
+    } catch (error: any) {
+      showToast(error.message || "Failed to update member", 'error');
       console.error("handleUpdateExco error:", error);
     } finally {
       setLoading(false);
@@ -471,19 +474,15 @@ export const ExcosManagement = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo and Brand */}
             <div className="flex items-center gap-8">
-              <Link href="/admin/dashboard" className="flex items-center gap-2 group">
-                <div className="w-8 h-8 bg-linear-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+              
+              
+                <div className="w-8 h-8 bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] rounded-lg flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform border border-[#0e2d3d]/50">
                   <span className="text-white font-bold text-lg">E</span>
                 </div>
                 <span className="font-bold text-slate-800 text-lg">ExcosHub</span>
-              </Link>
               
-              {/* Navigation Links */}
-              <div className="hidden md:flex items-center gap-1">
-                <Link href="/admin/dashboard" className="px-4 py-2 text-slate-600 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-all text-sm font-medium">
-                  Dashboard
-                </Link>
-              </div>
+              
+              
             </div>
 
             {/* Right side nav items */}
@@ -502,7 +501,7 @@ export const ExcosManagement = () => {
                   <p className="text-sm font-semibold text-slate-800">{activeExco?.name || 'Guest'}</p>
                   <p className="text-xs text-slate-500">Administrator</p>
                 </div>
-                <div className="w-9 h-9 rounded-full bg-linear-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-semibold shadow-md">
+                <div className="w-9 h-9 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] flex items-center justify-center text-white font-semibold shadow-md border border-[#0e2d3d]/50">
                   {activeExco?.profileImage ? (
                     <img
                       src={activeExco.profileImage}
@@ -548,9 +547,9 @@ export const ExcosManagement = () => {
                   setEditingExco(null);
                   setShowAddModal(true);
                 }}
-                className="group relative px-6 py-2.5 rounded-xl bg-linear-to-r from-emerald-600 to-emerald-500 text-white font-semibold shadow-lg hover:shadow-emerald-200/50 transition-all duration-300 hover:scale-105"
+                className="group relative px-6 py-2.5 rounded-xl bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white font-semibold shadow-lg hover:shadow-slate-900/50 transition-all duration-300 hover:scale-105 border border-[#0e2d3d]/50"
               >
-                <span className="absolute inset-0 bg-linear-to-r from-emerald-700 to-emerald-600 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                <span className="absolute inset-0 bg-white/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></span>
                 <span className="relative flex items-center gap-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -650,7 +649,7 @@ export const ExcosManagement = () => {
                       onClick={() => setFilterRole(role)}
                       className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${
                         filterRole === role 
-                          ? 'bg-linear-to-r from-emerald-600 to-emerald-500 text-white shadow-md' 
+                          ? 'bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white shadow-md border border-[#0e2d3d]/50' 
                           : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
@@ -752,12 +751,11 @@ export const ExcosManagement = () => {
                       />
                     </div>
 
-                    {/* Header Gradient */}
-                    <div className="relative h-28 bg-linear-to-br from-emerald-600 via-emerald-500 to-teal-600">
-                      <div className="absolute inset-0 bg-black/10"></div>
+                    {/* Enhanced Header Background */}
+                    <div className="relative h-24 bg-linear-to-br from-emerald-500/10 via-teal-500/5 to-transparent border-b border-emerald-100/50">
                       
                       {exco.isStaff && (
-                        <div className="absolute top-4 right-4 backdrop-blur-sm bg-amber-500/90 text-white text-xs px-3 py-1.5 rounded-full font-semibold shadow-lg">
+                        <div className="absolute top-4 right-4 backdrop-blur-md bg-amber-500/90 text-white text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider shadow-sm">
                           Staff
                         </div>
                       )}
@@ -765,8 +763,8 @@ export const ExcosManagement = () => {
 
                     <div className="relative px-6 pb-6">
                       {/* Profile Image */}
-                      <div className="flex justify-center -mt-14 mb-4">
-                        <div className="w-24 h-24 rounded-full bg-white p-1 shadow-xl border-4 border-white">
+                      <div className="flex justify-center -mt-12 mb-4">
+                        <div className="w-24 h-24 rounded-full bg-white p-1 shadow-lg border-4 border-white group-hover:border-emerald-100 transition-colors">
                           {exco.profileImage ? (
                             <img
                               src={exco.profileImage}
@@ -774,7 +772,7 @@ export const ExcosManagement = () => {
                               className="w-full h-full rounded-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full rounded-full bg-linear-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-2xl font-bold">
+                            <div className="w-full h-full rounded-full bg-linear-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white text-2xl font-bold">
                               {exco.name.charAt(0).toUpperCase()}
                             </div>
                           )}
@@ -867,8 +865,17 @@ export const ExcosManagement = () => {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-linear-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-sm font-bold">
-                                {exco.name.charAt(0).toUpperCase()}
+                              <div className="w-10 h-10 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] flex items-center justify-center text-white text-sm font-bold border border-[#0e2d3d]/30">
+                                {exco.profileImage ? (
+                                  <img
+                                    src={exco.profileImage}
+                                    alt={exco.name.charAt(0).toUpperCase()}
+                                    className="w-full h-full rounded-full object-cover"
+                                  />
+                                ) : (
+                                  exco.name.charAt(0).toUpperCase()
+                                  
+                                )}
                               </div>
                               <div>
                                 <p className="font-semibold text-slate-900">{exco.name}</p>
@@ -936,7 +943,7 @@ export const ExcosManagement = () => {
                   setEditingExco(null);
                   setShowAddModal(true);
                 }}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-linear-to-r from-emerald-600 to-emerald-500 text-white font-semibold hover:shadow-lg hover:shadow-emerald-200/50 transition-all"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white font-semibold hover:shadow-lg transition-all border border-[#0e2d3d]/50"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -952,7 +959,7 @@ export const ExcosManagement = () => {
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-2xl w-full my-8 shadow-2xl animate-modal-in">
-            <div className="sticky top-0 bg-linear-to-r from-emerald-600 to-emerald-500 px-6 py-5 flex items-center justify-between rounded-t-2xl">
+            <div className="sticky top-0 bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] px-6 py-5 flex items-center justify-between rounded-t-2xl border-b border-[#0e2d3d]/50">
               <div>
                 <h2 className="text-xl font-bold text-white">
                   {editingExco ? `Edit ${editingExco.name}` : 'Add New Member'}
@@ -977,7 +984,7 @@ export const ExcosManagement = () => {
               {/* Profile Image */}
               <div className="flex flex-col items-center">
                 <div className="relative mb-2">
-                  <div className="w-28 h-28 rounded-full bg-linear-to-br from-emerald-400 to-teal-500 p-1 border-4 border-white shadow-lg">
+                  <div className="w-28 h-28 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] p-1 border-4 border-white shadow-lg">
                     {profileImage ? (
                       <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
                     ) : (
@@ -989,7 +996,7 @@ export const ExcosManagement = () => {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-white border-2 border-emerald-500 text-emerald-600 flex items-center justify-center hover:bg-emerald-50 shadow-lg transition-all text-sm"
+                    className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-white border-2 border-slate-900 text-slate-900 flex items-center justify-center hover:bg-slate-50 shadow-lg transition-all text-sm"
                   >
                     📷
                   </button>
@@ -1005,7 +1012,7 @@ export const ExcosManagement = () => {
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className={`w-full px-4 py-2.5 rounded-lg border ${formErrors.name ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'} focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all`}
+                    className={`w-full px-4 py-2.5 rounded-lg border ${formErrors.name ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'} focus:border-slate-900 focus:ring-2 focus:ring-slate-100 outline-none transition-all`}
                     placeholder="John Doe"
                   />
                   {formErrors.name && <p className="text-xs text-red-600 mt-1">{formErrors.name}</p>}
@@ -1016,7 +1023,7 @@ export const ExcosManagement = () => {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className={`w-full px-4 py-2.5 rounded-lg border ${formErrors.email ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'} focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all`}
+                    className={`w-full px-4 py-2.5 rounded-lg border ${formErrors.email ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'} focus:border-slate-900 focus:ring-2 focus:ring-slate-100 outline-none transition-all`}
                     placeholder="john@example.com"
                   />
                   {formErrors.email && <p className="text-xs text-red-600 mt-1">{formErrors.email}</p>}
@@ -1030,7 +1037,7 @@ export const ExcosManagement = () => {
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className={`w-full px-4 py-2.5 rounded-lg border ${formErrors.password ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'} focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all`}
+                    className={`w-full px-4 py-2.5 rounded-lg border ${formErrors.password ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'} focus:border-slate-900 focus:ring-2 focus:ring-slate-100 outline-none transition-all`}
                     placeholder={editingExco ? 'Leave blank to keep current' : 'Min 6 characters'}
                   />
                   {formErrors.password && <p className="text-xs text-red-600 mt-1">{formErrors.password}</p>}
@@ -1041,7 +1048,7 @@ export const ExcosManagement = () => {
                     type="password"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    className={`w-full px-4 py-2.5 rounded-lg border ${formErrors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'} focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all`}
+                    className={`w-full px-4 py-2.5 rounded-lg border ${formErrors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'} focus:border-slate-900 focus:ring-2 focus:ring-slate-100 outline-none transition-all`}
                     placeholder="Confirm password"
                   />
                   {formErrors.confirmPassword && <p className="text-xs text-red-600 mt-1">{formErrors.confirmPassword}</p>}
@@ -1054,7 +1061,7 @@ export const ExcosManagement = () => {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className={`w-full px-4 py-2.5 rounded-lg border ${formErrors.phone ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'} focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all`}
+                  className={`w-full px-4 py-2.5 rounded-lg border ${formErrors.phone ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'} focus:border-slate-900 focus:ring-2 focus:ring-slate-100 outline-none transition-all`}
                   placeholder="+234 812 345 6789"
                 />
                 {formErrors.phone && <p className="text-xs text-red-600 mt-1">{formErrors.phone}</p>}
@@ -1067,7 +1074,7 @@ export const ExcosManagement = () => {
                     value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
-                  >
+                  > 
                     {departments.map(dept => <option key={dept}>{dept}</option>)}
                   </select>
                 </div>
@@ -1076,7 +1083,7 @@ export const ExcosManagement = () => {
                   <select
                     value={formData.position}
                     onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                    className={`w-full px-4 py-2.5 rounded-lg border ${formErrors.position ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'} focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all`}
+                    className={`w-full px-4 py-2.5 rounded-lg border ${formErrors.position ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'} focus:border-slate-900 focus:ring-2 focus:ring-slate-100 outline-none transition-all`}
                   >
                     <option value="">Select position</option>
                     {positions.map(pos => <option key={pos}>{pos}</option>)}
@@ -1091,7 +1098,7 @@ export const ExcosManagement = () => {
                     type="checkbox"
                     checked={formData.isStaff}
                     onChange={(e) => setFormData({ ...formData, isStaff: e.target.checked, level: e.target.checked ? 0 : formData.level })}
-                    className="w-5 h-5 text-emerald-600 accent-emerald-600 rounded cursor-pointer"
+                    className="w-5 h-5 text-slate-900 accent-slate-900 rounded cursor-pointer"
                   />
                   <span className="text-sm font-medium text-slate-900">This is a staff member / faculty advisor</span>
                 </label>
@@ -1104,14 +1111,14 @@ export const ExcosManagement = () => {
                     value={formData.level}
                     onChange={(e) => setFormData({ ...formData, level: parseInt(e.target.value) })}
                     className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
-                  >
+                  > 
                     {[100, 200, 300, 400].map(level => <option key={level} value={level}>{level} Level</option>)}
                   </select>
                 </div>
               )}
 
               <div className="flex gap-3 pt-4 border-t border-slate-200">
-                <button type="submit" disabled={loading} className="flex-1 px-6 py-2.5 rounded-xl bg-linear-to-r from-emerald-600 to-emerald-500 text-white font-semibold hover:shadow-lg transition-all disabled:opacity-50">
+                <button type="submit" disabled={loading} className="flex-1 px-6 py-2.5 rounded-xl bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white font-semibold hover:shadow-lg transition-all disabled:opacity-50 border border-[#0e2d3d]/50">
                   {loading ? 'Processing...' : (editingExco ? 'Update Member' : 'Add Member')}
                 </button>
                 <button type="button" onClick={() => { setShowAddModal(false); resetForm(); setEditingExco(null); }} className="px-6 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-semibold hover:bg-slate-100 transition-all">

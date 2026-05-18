@@ -71,7 +71,7 @@ const NacosLogin: React.FC = () => {
         sessionStorage.setItem('token', res.data.access_token);
         sessionStorage.setItem('admin', JSON.stringify(res.data.admin));
         showToast(res.message || 'Login successful','success');
-        router.push('/pages/admin/manage-excos');
+        router.push('/pages/admin');
       }else{
         showToast(res.message || 'Login failed. Please check your credentials and try again.','error');
       }
