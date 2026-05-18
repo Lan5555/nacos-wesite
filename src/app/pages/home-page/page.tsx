@@ -5,6 +5,7 @@ import Navbar from "./Navbar/Navbar";
 import About from "./About/About";
 import Hero from "./Hero/Hero";
 import Resources from "./Resources/Resources";
+import Excos from "./Excos/Excos"
 
 const HomePage: React.FC = () => {
   const [heroData, setHeroData] = useState<any>(null);
@@ -16,6 +17,7 @@ const HomePage: React.FC = () => {
       <Hero sharedData={(data) => setHeroData(data)} isLoading={(loading) => setLoading(loading)} />
       <About data={heroData} loading={loading} />
       <Resources />
+      <Excos/>
     </main>
   );
 }
