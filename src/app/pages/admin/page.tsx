@@ -36,7 +36,9 @@ import {
   Gift,
   Building2,
   BadgeCheck,
-  Clock
+  Clock,
+  Search,
+  Download
 } from 'lucide-react';
 import Validator from '@/app/validators/auth-validator';
 import { Exco, ExcosManagement } from './manage-excos/manage-excos';
@@ -198,6 +200,11 @@ const AdminPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState('overview');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const router = useRouter();
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentLevelFilter, setStudentLevelFilter] = useState('all');
+  const [studentDeptFilter, setStudentDeptFilter] = useState('all');
+  const [financeSearch, setFinanceSearch] = useState('');
+  const [financeTypeFilter, setFinanceTypeFilter] = useState('all');
   
   // Data States
   const [students, setStudents] = useState<Student[]>(initialStudents);
@@ -375,6 +382,27 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const handleDownloadFinanceReport = () => {
+    const headers = ['Transaction ID', 'Description', 'Amount', 'Date', 'Paid By'];
+    const rows = transactions.map(tx => [
+      tx.id,
+      tx.desc,
+      tx.amount.replace('₦', ''),
+      tx.date,
+      tx.paidBy
+    ]);
+
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", `NACOS_Finance_Report_${new Date().toLocaleDateString()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Financial report downloaded');
+  };
+
   //==========================================//
   const loadAdminData = () => {
     const admin = sessionStorage.getItem('admin');
@@ -399,7 +427,22 @@ const AdminPage: React.FC = () => {
 
   // Render Functions
   const renderStudentsTable = () => (
-    <div className="overflow-x-auto rounded-xl border border-slate-200">
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-50">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          <input type="text" placeholder="Search by name or matric..." value={studentSearch} onChange={(e) => setStudentSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        </div>
+        <select value={studentLevelFilter} onChange={(e) => setStudentLevelFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+          <option value="all">All Levels</option>
+          <option value="100">100L</option><option value="200">200L</option><option value="300">300L</option><option value="400">400L</option>
+        </select>
+        <select value={studentDeptFilter} onChange={(e) => setStudentDeptFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+          <option value="all">All Departments</option>
+          {Array.from(new Set(students.map(s => s.dept))).map(dept => <option key={dept} value={dept}>{dept}</option>)}
+        </select>
+      </div>
+      <div className="overflow-x-auto rounded-xl border border-slate-200">
       <table className="w-full">
         <thead className="bg-slate-50 border-b border-slate-200">
           <tr>
@@ -412,7 +455,12 @@ const AdminPage: React.FC = () => {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200 bg-white">
-          {students.map((student, idx) => (
+          {students.filter(s => {
+            const matchesSearch = s.name.toLowerCase().includes(studentSearch.toLowerCase()) || s.matric.toLowerCase().includes(studentSearch.toLowerCase());
+            const matchesLevel = studentLevelFilter === 'all' || s.level.toString() === studentLevelFilter;
+            const matchesDept = studentDeptFilter === 'all' || s.dept === studentDeptFilter;
+            return matchesSearch && matchesLevel && matchesDept;
+          }).map((student, idx) => (
             <tr key={student.id} className="hover:bg-slate-50 transition-colors">
               <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-emerald-600">{student.matric}</td>
               <td className="px-6 py-4 whitespace-nowrap font-semibold text-slate-900">{student.name}</td>
@@ -443,6 +491,7 @@ const AdminPage: React.FC = () => {
           ))}
         </tbody>
       </table>
+    </div>
     </div>
   );
 
@@ -507,6 +556,20 @@ const AdminPage: React.FC = () => {
   );
 
   const renderFinanceLogs = () => (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-50">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          <input type="text" placeholder="Search by description or payer..." value={financeSearch} onChange={(e) => setFinanceSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        </div>
+        <select value={financeTypeFilter} onChange={(e) => setFinanceTypeFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+          <option value="all">All Transactions</option>
+          <option value="Dues">Annual Dues</option>
+          <option value="Merch">Merchandise</option>
+          <option value="Event">Events</option>
+        </select>
+      </div>
+
     <div className="overflow-x-auto rounded-xl border border-slate-200 mb-6">
       <table className="w-full">
         <thead className="bg-slate-50 border-b border-slate-200">
@@ -519,7 +582,11 @@ const AdminPage: React.FC = () => {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200 bg-white">
-          {transactions.map((tx, idx) => (
+          {transactions.filter(tx => {
+            const matchesSearch = tx.desc.toLowerCase().includes(financeSearch.toLowerCase()) || tx.paidBy.toLowerCase().includes(financeSearch.toLowerCase());
+            const matchesType = financeTypeFilter === 'all' || tx.desc.toLowerCase().includes(financeTypeFilter.toLowerCase());
+            return matchesSearch && matchesType;
+          }).map((tx, idx) => (
             <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
               <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-emerald-600">{tx.id}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{tx.desc}</td>
@@ -530,6 +597,7 @@ const AdminPage: React.FC = () => {
           ))}
         </tbody>
       </table>
+    </div>
     </div>
   );
 
@@ -845,9 +913,14 @@ const AdminPage: React.FC = () => {
                 </div>
                 <h3 className="font-serif text-emerald-900">Dues & Transaction Logs</h3>
               </div>
-              <button onClick={() => setModals(prev => ({ ...prev, recordPayment: true }))} className="flex items-center gap-1 px-4 py-2 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-sm font-semibold hover:opacity-90 transition shadow-sm">
-                <Receipt size={14} /> Record Payment
-              </button>
+              <div className="flex gap-2">
+                <button onClick={handleDownloadFinanceReport} className="flex items-center gap-1 px-4 py-2 rounded-full border border-emerald-200 text-emerald-700 text-sm font-semibold hover:bg-emerald-50 transition shadow-sm">
+                  <Download size={14} /> Export CSV
+                </button>
+                <button onClick={() => setModals(prev => ({ ...prev, recordPayment: true }))} className="flex items-center gap-1 px-4 py-2 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-sm font-semibold hover:opacity-90 transition shadow-sm">
+                  <Receipt size={14} /> Record Payment
+                </button>
+              </div>
             </div>
             <div className="p-5">
               {renderFinanceLogs()}
