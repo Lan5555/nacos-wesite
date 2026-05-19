@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import CoreService from "@/app/hooks/core-service";
 import styles from "./Excos.module.css";
-import { Twitter, Instagram, Calendar, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface Exco {
   id: string;
@@ -18,20 +19,20 @@ interface Exco {
 
 const service = new CoreService();
 
-  const positionOrder = [
-  'President',
-  'Vice President',
-  'Secretary General',
-  'Welfare Secretary',
-  'Director of Tech and Innovation',
-  'Financial Secretary',
-  'Public Relations Officer',
-  'Director of Academics',
-  'Director of Socials',
-  'Director of Sports',
-  'Director of Welfare',
-  'Auditor General',
-  'Treasurer',
+const positionOrder = [
+  "President",
+  "Vice President",
+  "Secretary General",
+  "Welfare Secretary",
+  "Director of Tech and Innovation",
+  "Financial Secretary",
+  "Public Relations Officer",
+  "Director of Academics",
+  "Director of Socials",
+  "Director of Sports",
+  "Director of Welfare",
+  "Auditor General",
+  "Treasurer",
 ];
 
 const Excos: React.FC = () => {
@@ -41,22 +42,38 @@ const Excos: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+
       const result = await service.get("admin/find-all");
+
       if (result.success) {
-        const sorted = (result.data ?? []).sort((a: Exco, b: Exco) => {
-          const aIndex = positionOrder.indexOf(a.position ?? '');
-          const bIndex = positionOrder.indexOf(b.position ?? '');
+        const sorted = (result.data ?? []).sort(
+          (a: Exco, b: Exco) => {
+            const aIndex = positionOrder.indexOf(
+              a.position ?? ""
+            );
 
-         
-          const aRank = aIndex === -1 ? positionOrder.length : aIndex;
-          const bRank = bIndex === -1 ? positionOrder.length : bIndex;
+            const bIndex = positionOrder.indexOf(
+              b.position ?? ""
+            );
 
-          return aRank - bRank;
-        });
+            const aRank =
+              aIndex === -1
+                ? positionOrder.length
+                : aIndex;
+
+            const bRank =
+              bIndex === -1
+                ? positionOrder.length
+                : bIndex;
+
+            return aRank - bRank;
+          }
+        );
+
         setExcos(sorted);
       }
-    } catch {
-      
+    } catch (error) {
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -66,7 +83,6 @@ const Excos: React.FC = () => {
     fetchData();
   }, []);
 
-  
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -76,59 +92,191 @@ const Excos: React.FC = () => {
       .slice(0, 2);
   };
 
-  
   const getColor = (name: string) => {
     const colors = [
-      "#22863a", "#3b82f6", "#8b5cf6",
-      "#f97316", "#06b6d4", "#64748b",
+      "#22863a",
+      "#3b82f6",
+      "#8b5cf6",
+      "#f97316",
+      "#06b6d4",
+      "#64748b",
     ];
-    const index = name.charCodeAt(0) % colors.length;
+
+    const index =
+      name.charCodeAt(0) % colors.length;
+
     return colors[index];
   };
 
   return (
-    <section className={styles.execs} id="excos">
-      <div className={styles.inner}>
-        <div className={styles.header}>
-          <div className={styles.badge}>LEADERSHIP</div>
-          <h2 className={styles.heading}>
-            Meet Our <span className={styles.green}>Executives</span>
-          </h2>
-          <p className={styles.subtext}>
-            Elected student leaders championing excellence across all NACOS chapters.
-          </p>
-        </div>
+    <section
+      className={styles.execs}
+      id="excos"
+    >
+      <div className={styles.noise}></div>
 
-        {/* Loader */}
+      <div className={styles.inner}>
+        <motion.div
+          className={styles.header}
+          initial={{ opacity: 0, y: 60 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{
+            duration: 0.9,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
+          <div className={styles.badge}>
+            LEADERSHIP
+          </div>
+
+          <h2 className={styles.heading}>
+            Meet Our{" "}
+            <span className={styles.green}>
+              Executives
+            </span>
+          </h2>
+
+          <p className={styles.subtext}>
+            Elected student leaders
+            championing excellence across
+            all NACOS chapters.
+          </p>
+        </motion.div>
+
         {loading ? (
           <div className={styles.loaderWrapper}>
-            <Loader2 size={40} className={styles.spinner} />
-            <p className={styles.loaderText}>Loading executives...</p>
+            <Loader2
+              size={40}
+              className={styles.spinner}
+            />
+
+            <p className={styles.loaderText}>
+              Loading executives...
+            </p>
           </div>
         ) : (
           <div className={styles.grid}>
-            {excos.map((exco) => (
-              <div key={exco.id} className={styles.card}>
-                {exco.profileImage ? (
-                  <img
-                    src={exco.profileImage}
-                    alt={exco.name}
-                    className={styles.avatarImage}
-                  />
-                ) : (
+            {excos.map((exco, index) => (
+              <motion.div
+                key={exco.id}
+                className={styles.cardWrapper}
+                initial={{
+                  opacity: 0,
+                  y: 80,
+                  scale: 0.9,
+                }}
+                whileInView={{
+                  opacity: 1,
+                  y: 0,
+                  scale: 1,
+                }}
+                viewport={{ once: true }}
+                transition={{
+                  duration: 0.8,
+                  delay: index * 0.08,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+              >
+                <motion.div
+                  className={styles.card}
+                  whileHover={{
+                    rotateY: 180,
+                    scale: 1.04,
+                  }}
+                  transition={{
+                    duration: 0.9,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                >
+                  {/* FRONT */}
                   <div
-                    className={styles.avatar}
-                    style={{ background: getColor(exco.name) }}
+                    className={`${styles.face} ${styles.front}`}
                   >
-                    {getInitials(exco.name)}
+                    <div
+                      className={styles.glow}
+                    />
+
+                    {exco.profileImage ? (
+                      <img
+                        src={
+                          exco.profileImage
+                        }
+                        alt={exco.name}
+                        className={
+                          styles.avatarImage
+                        }
+                      />
+                    ) : (
+                      <div
+                        className={
+                          styles.avatar
+                        }
+                        style={{
+                          background:
+                            getColor(
+                              exco.name
+                            ),
+                        }}
+                      >
+                        {getInitials(
+                          exco.name
+                        )}
+                      </div>
+                    )}
+
+                    <h3 className={styles.name}>
+                      {exco.name}
+                    </h3>
+
+                    <p className={styles.role}>
+                      {exco.position ??
+                        "Member"}
+                    </p>
+
+                    <p className={styles.meta}>
+                      {exco.isStaff
+                        ? "Staff"
+                        : `${exco.level}L`}{" "}
+                      · {exco.department}
+                    </p>
                   </div>
-                )}
-                <h3 className={styles.name}>{exco.name}</h3>
-                <p className={styles.role}>{exco.position ?? "Member"}</p>
-                <p className={styles.meta}>
-                  {exco.isStaff ? "Staff" : `${exco.level}L`} · {exco.department}
-                </p>
-              </div>
+
+                  {/* BACK */}
+                  <div
+                    className={`${styles.face} ${styles.back}`}
+                  >
+                    {exco.profileImage ? (
+                      <img
+                        src={
+                          exco.profileImage
+                        }
+                        alt={exco.name}
+                        className={
+                          styles.backImage
+                        }
+                      />
+                    ) : (
+                      <div
+                        className={
+                          styles.backFallback
+                        }
+                        style={{
+                          background:
+                            getColor(
+                              exco.name
+                            ),
+                        }}
+                      >
+                        {getInitials( exco.name  )}  </div> )}
+                    <div className={ styles.overlay } />
+                    <div className={ styles.backContent}>
+                     <h3>{exco.name}</h3>
+                     <p> {exco.position} </p> 
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
             ))}
           </div>
         )}

@@ -75,12 +75,12 @@
   line-height: 1.7;
   max-width: 480px;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight : 500;
+  font-weight: 500;
 }
 
 .ctas {
-   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight : 500;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
@@ -118,7 +118,7 @@
 
 .stats {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight : 500;
+  font-weight: 500;
   display: flex;
   gap: 0;
   align-items: center;
@@ -167,10 +167,27 @@
 .card {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(45, 186, 78, 0.2);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.25),
+    0 0 80px rgba(45, 186, 78, 0.12);
+  position: relative;
+  overflow: hidden;
   border-radius: 20px;
   padding: 1.75rem;
   width: 520px;
   backdrop-filter: blur(8px);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  background: rgba(45, 186, 78, 0.08);
+  border-radius: 50%;
+  top: -80px;
+  right: -60px;
+  filter: blur(40px);
 }
 
 .cardHeader {
@@ -206,7 +223,7 @@
   }
 
   .inner {
-     justify-content: center;
+    justify-content: center;
     grid-template-columns: 1fr;
     gap: 3rem;
     padding: 0 1.5rem;
@@ -264,6 +281,11 @@
     width: 100%;
     max-width: 400px;
     padding: 1.5rem;
+    box-shadow:
+      0 10px 30px rgba(0, 0, 0, 0.25),
+      0 0 80px rgba(45, 186, 78, 0.12);
+    position: relative;
+    overflow: hidden;
   }
 }
 
@@ -352,9 +374,11 @@
   .inner {
     grid-template-columns: 1fr;
   }
+
   .right {
     justify-content: center;
   }
+
   .card {
     max-width: 300px;
   }
