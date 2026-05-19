@@ -34,11 +34,9 @@
 .logoIcon {
   width: 46px;
   height: 46px;
-  background: linear-gradient(
-  135deg,
-  #176f17,
-  #2faa2f
-);
+  background: linear-gradient(135deg,
+      #176f17,
+      #2faa2f);
   color: white;
   border-radius: 10px;
   display: flex;
@@ -50,8 +48,8 @@
 }
 
 .logoText {
-   font-weight: 700; 
-   font-size: 1.2rem;
+  font-weight: 700;
+  font-size: 1.2rem;
   letter-spacing: -0.03em;
 }
 
@@ -110,7 +108,7 @@
 }
 
 .portal {
-  background:  rgba(30, 122, 30);
+  background: rgba(30, 122, 30);
   color: var(--white);
   padding: 0.6rem 1.25rem;
   border-radius: 100px;
@@ -121,7 +119,7 @@
 }
 
 .portal:hover {
-  background: rgb(29, 85, 29) ;
+  background: rgb(29, 85, 29);
   transform: translateY(-1px);
 }
 
@@ -177,19 +175,22 @@
   gap: 0.75rem;
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px solid rgba(255,255,255,0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 @media (max-width: 900px) {
   .navLinks {
     display: none;
   }
+
   .navActions {
     display: none;
   }
+
   .hamburger {
     display: flex;
   }
+
   .mobileMenu {
     display: flex;
   }

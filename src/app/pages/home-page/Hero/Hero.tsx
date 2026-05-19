@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import CoreService from "@/app/hooks/core-service";
 import styles from "./Hero.module.css";
 import { useToast } from "@/app/providers/toast-provider";
+import { motion } from "framer-motion";
 
 interface HeroData {
   totalUsers?: number;
@@ -26,80 +27,136 @@ interface HeroProps {
 
 const Hero: React.FC<HeroProps> = ({ sharedData, isLoading }) => {
 
-      const [data, setData] = useState<HeroData | null>(null);
-      const [loading, setLoading] = useState(true);
-      const {showToast} = useToast();
-      const service:CoreService = new CoreService();
+  const [data, setData] = useState<HeroData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
+  const service: CoreService = new CoreService();
 
-      const fetchData = async () => {
-        try {
-          setLoading(true);
-          isLoading(true);
-          const [usersResult, eventsResult] = await Promise.all([
-            service.get("users/total-users"),
-            service.get("events/total-events"),
-          ]);
-          // Always check the success status of each API call before using the data
-          if(usersResult.success && eventsResult.success) {
-            setData({
-            totalUsers: usersResult.data['totalUsers'],
-            totalEvents: eventsResult.data['totalEvents'],
-           });
+  const fadeUp = {
+    hidden: { opacity: 0, y: 40 },
+    visible: (delay = 0) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.8,
+        delay,
+        ease: [0.22, 1, 0.36, 1],
+      },
+    }),
+  };
 
-            sharedData({
-              totalUsers: usersResult.data['totalUsers'],
-              totalEvents: eventsResult.data['totalEvents'],
-            });
-          } else {
-            showToast("Failed to load hero data. Please try again later.", "error");
-          }
-        } catch (error) {
-          console.error("fetchData error:", error);
-          showToast("Failed to load hero data. Please try again later.", "error");
-        } finally {
-          setLoading(false);
-          isLoading(false);
-        }
-      };
-      
-      useEffect(() => {
-        fetchData();
-      }, []);
+  const floatingCard = {
+    hidden: {
+      opacity: 0,
+      x: 80,
+      rotate: 4,
+      scale: 0.92,
+    },
+    visible: {
+      opacity: 1,
+      x: 0,
+      rotate: 0,
+      scale: 1,
+      transition: {
+        duration: 1,
+        ease: [0.22, 1, 0.36, 1],
+      },
+    },
+  };
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      isLoading(true);
+      const [usersResult, eventsResult] = await Promise.all([
+        service.get("users/total-users"),
+        service.get("events/total-events"),
+      ]);
+      // Always check the success status of each API call before using the data
+      if (usersResult.success && eventsResult.success) {
+        setData({
+          totalUsers: usersResult.data['totalUsers'],
+          totalEvents: eventsResult.data['totalEvents'],
+        });
+
+        sharedData({
+          totalUsers: usersResult.data['totalUsers'],
+          totalEvents: eventsResult.data['totalEvents'],
+        });
+      } else {
+        showToast("Failed to load hero data. Please try again later.", "error");
+      }
+    } catch (error) {
+      console.error("fetchData error:", error);
+      showToast("Failed to load hero data. Please try again later.", "error");
+    } finally {
+      setLoading(false);
+      isLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   return (
     <section className={styles.hero} id="hero">
       <div className={styles.inner}>
         {/* Left Column */}
-        <div className={styles.left}>
-          <div className={styles.badge}>
+        <motion.div
+          className={styles.left}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div
+            className={styles.badge}
+            variants={fadeUp}
+            custom={0.1}
+          >
             <span>🌿</span>
             <span>Nigeria&apos;s Premier CS Student Body</span>
-          </div>
+          </motion.div>
 
-          <h1 className={styles.headline}>
+          <motion.h1
+            className={styles.headline}
+            variants={fadeUp}
+            custom={0.2}
+          >
             Empowering
             <br />
             Nigeria&apos;s{" "}
             <em className={styles.highlight}>Tech
-            <br />
-            Generation</em>
-          </h1>
+              <br />
+              Generation</em>
+          </motion.h1>
 
-          <p className={styles.subtext}>
+          <motion.p
+            className={styles.subtext}
+            variants={fadeUp}
+            custom={0.3}
+          >
             NACOS unites Computer Science students across 48 institutions —
             providing resources, community, and career pathways for
             tomorrow&apos;s innovators.
-          </p>
+          </motion.p>
 
-          <div className={styles.ctas}>
+          <motion.div
+            className={styles.ctas}
+            variants={fadeUp}
+            custom={0.4}
+          >
             <button className={styles.ctaPrimary}>Access Dashboard →</button>
             <button className={styles.ctaSecondary}>Learn About NACOS</button>
-          </div>
+          </motion.div>
 
-          <div className={styles.stats}>
+          <motion.div
+            className={styles.stats}
+            variants={fadeUp}
+            custom={0.5}
+          >
             <div className={styles.statItem}>
               <span className={styles.statNum}>
-                    {loading ? "..." : data?.totalUsers ? `${data.totalUsers.toLocaleString()}+` : "5,000+"}
+                {loading ? "..." : data?.totalUsers ? `${data.totalUsers.toLocaleString()}+` : "5,000+"}
               </span>
               <span className={styles.statLabel}>Active Members</span>
             </div>
@@ -115,12 +172,27 @@ const Hero: React.FC<HeroProps> = ({ sharedData, isLoading }) => {
               </span>
               <span className={styles.statLabel}>Resources</span>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Right Column — Resource Overview Card */}
-        <div className={styles.right}>
-          <div className={styles.card}>
+        <motion.div
+          className={styles.right}
+          variants={floatingCard}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div
+            className={styles.card}
+            animate={{
+              y: [0, -12, 0],
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
             <div className={styles.cardHeader}>
               <div className={styles.dots}>
                 <span className={styles.dotGreen} />
@@ -152,7 +224,7 @@ const Hero: React.FC<HeroProps> = ({ sharedData, isLoading }) => {
               </div>
               <div className={styles.metricCard}>
                 <span className={styles.metricNum}>
-                      {loading ? "..." : data?.totalEvents ? `${data.totalEvents}+` : "200+"}
+                  {loading ? "..." : data?.totalEvents ? `${data.totalEvents}+` : "200+"}
                 </span>
                 <span className={styles.metricLabel}>Annual Events</span>
               </div>
@@ -165,8 +237,8 @@ const Hero: React.FC<HeroProps> = ({ sharedData, isLoading }) => {
                 <span className={styles.metricLabel}>Student Satisfaction</span>
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );
