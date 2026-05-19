@@ -38,7 +38,9 @@ import {
   BadgeCheck,
   Clock,
   Search,
-  Download
+  Download,
+  ChartBar,
+  Cog
 } from 'lucide-react';
 import Validator from '@/app/validators/auth-validator';
 import { Exco, ExcosManagement } from './manage-excos/manage-excos';
@@ -46,6 +48,8 @@ import { HiAcademicCap } from 'react-icons/hi';
 import { label } from 'framer-motion/client';
 import { useRouter } from 'next/navigation';
 import CourseManagement from './manage-courses/manage-courses';
+import ResultsManagement from './manage-results/manage-results';
+import AdminSettings from './settings/settings';
 
 // --- Types ---
 type Student = {
@@ -415,14 +419,6 @@ const AdminPage: React.FC = () => {
     loadAdminData();
   },[]);
 
-//   useEffect(() => {
-//     if(activeSection == 'courses'){
-//         router.push('/pages/admin/manage-courses')
-//     }else if(activeSection == 'excos'){
-//         router.push('/pages/admin/manage-excos')
-//     }       
-//   },[activeSection]);
-
   //==========================================//
 
   // Render Functions
@@ -662,9 +658,11 @@ const AdminPage: React.FC = () => {
     { id: 'reps', label: 'Dept. Reps', icon: <UserCog size={18} /> },
     { id: 'courses', label: 'Courses', icon: <HiAcademicCap size={18} /> },
     { id: 'excos', label: 'Excos', icon: <Users size={18} />},
+    { id: 'results', label: 'Results', icon: <ChartBar size={18} />},
     { id: 'staff', label: 'Staff Directory', icon: <UserCheck size={18} /> },
     { id: 'finance', label: 'Finance & Dues', icon: <Coins size={18} /> },
     { id: 'events', label: 'Events', icon: <CalendarCheck size={18} />, badge: true },
+    { id: 'settings', label: 'Settings', icon: <Cog size={18} /> }
   ];
 
   const pageTitles: Record<string, [string, string]> = {
@@ -674,6 +672,10 @@ const AdminPage: React.FC = () => {
     staff: ['Staff Directory', 'Faculty and administrative staff records'],
     finance: ['Finance & Dues', 'Transaction logs and dues collection progress'],
     events: ['Events Oversight', 'Create, approve, and manage NACOS events'],
+    results: ['Results', 'Upload results for the respective session'],
+    excos: ['Excos', 'Manage Available Excos'],
+    courses: ['Courses', 'Manage courses'],
+    settings: ['Settings', 'Admin Settings']
   };
 
   // Stats
@@ -695,7 +697,7 @@ const AdminPage: React.FC = () => {
       </button>
 
       {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 h-full w-64 bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] z-40 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 flex flex-col shadow-2xl`}>
+      <aside className={`fixed top-0 left-0 h-full w-64 bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] z-40 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 flex flex-col shadow-2xl overflow-y-auto`}>
         <div className="absolute bottom-0 right-0 w-48 h-48 bg-emerald-800/30 rounded-full blur-2xl pointer-events-none"></div>
         <div className="absolute bottom-0 right-0 w-48 h-48 bg-[#0e2d3d]/30 rounded-full blur-2xl pointer-events-none"></div>
         
@@ -711,11 +713,11 @@ const AdminPage: React.FC = () => {
           </div>
           <div className="inline-flex items-center gap-1 mt-3 bg-white/5 rounded-full px-3 py-1 border border-white/10">
             <Shield size={10} className="text-slate-400" />
-            <span className="text-[10px] font-semibold text-slate-300 uppercase">Super Admin · Level 3</span>
+            <span className="text-[10px] font-semibold text-slate-300 uppercase">{(adminData.adminLevel ?? 0) > 0 ? `Super Admin · Level ${adminData.adminLevel}` : "Admin · Level 1"}</span>
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-1">
           {navItems.map(item => (
             <button
               key={item.id}
@@ -964,6 +966,9 @@ const AdminPage: React.FC = () => {
         {activeSection === 'excos' && (<ExcosManagement activeExco={adminData}/>)}
         {/* Courses Section */}
         {activeSection === 'courses' && (<CourseManagement/>)}
+        {/* Results Section */}
+        {activeSection === 'results' && (<ResultsManagement/>)}
+        {activeSection === 'settings' && (<AdminSettings/>)}
       </main>
 
       {/* Modals */}

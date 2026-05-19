@@ -223,7 +223,7 @@ const CourseManagement: React.FC = () => {
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-emerald-100 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-5">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-11 h-11 bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] rounded-xl flex items-center justify-center shadow-lg border border-white/10">
                 <BookOpen className="w-5 h-5 text-white" />
@@ -237,7 +237,7 @@ const CourseManagement: React.FC = () => {
             </div>
             <button
               onClick={() => handleOpenModal()}
-              className="flex items-center gap-2 px-5 py-2.5 bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white rounded-xl font-medium transition-all shadow-md hover:shadow-lg border border-[#0e2d3d]/50"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white rounded-xl font-medium transition-all shadow-md hover:shadow-lg border border-[#0e2d3d]/50 w-full md:w-auto"
             >
               <Plus size={18} />
               Add Course
@@ -249,7 +249,7 @@ const CourseManagement: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Filters */}
         <div className="bg-white rounded-2xl border border-emerald-100 p-5 mb-8 shadow-sm">
-          <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex flex-col md:flex-row flex-wrap gap-4 items-end">
             <div className="flex-1 min-w-50">
               <label className="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-1.5 block">Search</label>
               <div className="relative">
@@ -263,7 +263,7 @@ const CourseManagement: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="w-48">
+            <div className="w-full md:w-48">
               <label className="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-1.5 block">Department</label>
               <select
                 value={selectedDepartment}
@@ -276,7 +276,7 @@ const CourseManagement: React.FC = () => {
                 ))}
               </select>
             </div>
-            <div className="w-32">
+            <div className="w-full md:w-32">
               <label className="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-1.5 block">Level</label>
               <select
                 value={selectedLevel}
@@ -292,7 +292,7 @@ const CourseManagement: React.FC = () => {
             {(selectedDepartment || selectedLevel || searchTerm) && (
               <button
                 onClick={() => { setSelectedDepartment(''); setSelectedLevel(''); setSearchTerm(''); }}
-                className="px-4 py-2.5 text-emerald-600 hover:text-emerald-700 text-sm font-medium"
+                className="px-4 py-2.5 text-emerald-600 hover:text-emerald-700 text-sm font-medium w-full md:w-auto"
               >
                 Clear filters
               </button>

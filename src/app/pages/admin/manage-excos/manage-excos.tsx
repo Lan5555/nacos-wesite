@@ -22,6 +22,7 @@ export interface Exco {
   position?: string;
   phone?: string;
   profileImage?: string;
+  adminLevel?: number;
   createdAt: Date;
   updatedAt?: Date;
 }
@@ -473,7 +474,7 @@ export const ExcosManagement:React.FC<Props> = ({activeExco}) => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo and Brand */}
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2 sm:gap-8">
               
               
                 <div className="w-8 h-8 bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] rounded-lg flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform border border-[#0e2d3d]/50">
@@ -486,9 +487,9 @@ export const ExcosManagement:React.FC<Props> = ({activeExco}) => {
             </div>
 
             {/* Right side nav items */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               {/* Notification Bell */}
-              <button className="relative p-2 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all">
+              <button className="relative p-1.5 sm:p-2 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
@@ -496,7 +497,7 @@ export const ExcosManagement:React.FC<Props> = ({activeExco}) => {
               </button>
 
               {/* User Menu */}
-              <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
+              <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 border-l border-slate-200">
                 <div className="text-right hidden sm:block">
                   <p className="text-sm font-semibold text-slate-800">{activeExco?.name || 'Guest'}</p>
                   <p className="text-xs text-slate-500">Administrator</p>
