@@ -74,7 +74,7 @@ const NacosLogin: React.FC = () => {
       if(res.success){
         sessionStorage.setItem('token', res.data.access_token);
         showToast(res.message || 'Login successful','success');
-        router.push('/pages/dashboard');
+        router.push('/pages/student-portal');
       }else{
         showToast(res.message || 'Login failed. Please check your credentials and try again.','error');
       }
