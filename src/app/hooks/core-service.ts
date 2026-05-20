@@ -6,15 +6,15 @@ type Net = {
 }
 
 class CoreService {
-    private BASE_URL: string = "https://nacos-backend-y0vl.onrender.com";
+    private BASE_URL: string = process.env.NEXT_PUBLIC_BASE_URL || '';
 
     setBaseUrl(url: string) {
         this.BASE_URL = url;
     }
 
     private getToken(): string | null {
-    return localStorage.getItem('token');
-}
+    return sessionStorage.getItem('token');
+   }
 
 private setAuthHeader(headers: HeadersInit = {}) {
     const token = this.getToken();
@@ -39,7 +39,7 @@ private setAuthHeader(headers: HeadersInit = {}) {
             headers: this.setAuthHeader({
                 "Content-Type": "application/json"
             }),
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
         });
 
         const result = await response.json();
@@ -147,9 +147,7 @@ public async upload(
             {
                 method: method,
                 body: formData,
-                headers:this.setAuthHeader({
-                "Content-Type": "application/json"
-            })
+                headers:this.setAuthHeader()
             }
         );
 
@@ -168,4 +166,3 @@ public async upload(
 }
 
 export default CoreService;
-

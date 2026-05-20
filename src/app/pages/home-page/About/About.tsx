@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import CoreService from "@/app/hooks/core-service";
 import styles from "./About.module.css";
 import { BookOpen, Lightbulb, Handshake, Rocket, Globe, Trophy } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface AboutData {
   message?: string;
@@ -33,7 +34,16 @@ const About: React.FC<AboutProps> = ({ data, loading }) => {
     <section className={styles.about} id="about">
       <div className={styles.inner}>
         {/* Left */}
-        <div className={styles.left}>
+        <motion.div
+          className={styles.left}
+          initial={{ opacity: 0, y: 70 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{
+            duration: 0.9,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
           <div className={styles.badge}>WHO WE ARE</div>
 
           <h2 className={styles.heading}>
@@ -56,23 +66,64 @@ const About: React.FC<AboutProps> = ({ data, loading }) => {
           </p>
 
           <div className={styles.valuesGrid}>
-            {values.map((v) => (
-              <div key={v.label} className={styles.valueCard}>
+            {values.map((v, index) => (
+              <motion.div
+                key={v.label}
+                className={styles.valueCard}
+                initial={{
+                  opacity: 0,
+                  y: 40,
+                }}
+                whileInView={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                viewport={{ once: true }}
+                transition={{
+                  duration: 0.6,
+                  delay: index * 0.08,
+                }}
+                whileHover={{
+                  y: -8,
+                  scale: 1.03,
+                  rotateX: 4,
+                  rotateY: -4,
+                }}
+              >
                 <span className={styles.valueIcon}>{v.icon}</span>
                 <span className={styles.valueLabel}>{v.label}</span>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Right */}
-        <div className={styles.right}>
-          <div className={styles.estCard}>
+        <motion.div
+          className={styles.right}
+          initial={{ opacity: 0, x: 80 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{
+            duration: 1,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
+          <motion.div
+            className={styles.estCard}
+            animate={{
+              y: [0, -10, 0],
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
             <span className={styles.estLabel}>
               Est. {loading ? <span className={styles.skeletonText} /> : data?.established ?? 2008}
             </span>
             <p className={styles.estSub}>Nigeria&apos;s Premier CS Student Association</p>
-          </div>
+          </motion.div>
 
           <div className={styles.statsGrid}>
             <div className={styles.statCard}>
@@ -93,12 +144,12 @@ const About: React.FC<AboutProps> = ({ data, loading }) => {
             </div>
             <div className={styles.statCard}>
               <span className={styles.statNum}>
-                    {loading ? "..." : data?.totalEvents ? `${data.totalEvents}+` : "120+"}
+                {loading ? "..." : data?.totalEvents ? `${data.totalEvents}+` : "120+"}
               </span>
               <span className={styles.statLabel}>Events Per Year</span>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import CoreService from "@/app/hooks/core-service";
 import styles from "./Resources.module.css";
+
 
 interface Resource {
   id: number;
@@ -26,6 +28,43 @@ const defaultLevels: LevelData[] = [
 ];
 
 const service = new CoreService();
+
+const sectionReveal = {
+  hidden: { opacity: 0, y: 40 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.9,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+};
+
+const contentFade = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.55,
+      ease: [0.22, 1, 0.36, 1],
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const itemFade = {
+  hidden: { opacity: 0, y: 18 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.45,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+};
 
 export default function Resources() {
   const [activeLevel, setActiveLevel] = useState(0);
@@ -64,9 +103,22 @@ export default function Resources() {
   const current = levels[activeLevel];
 
   return (
-    <section className={styles.resources} id="resources">
+    <motion.section
+      className={styles.resources}
+      id="resources"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.2 }}
+      variants={sectionReveal}
+    >
       <div className={styles.inner}>
-        <div className={styles.header}>
+        <motion.div
+          className={styles.header}
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
+        >
           <div className={styles.badge}>STUDY MATERIALS</div>
           <h2 className={styles.heading}>
             Level <span className={styles.green}>Resources</span>
@@ -75,20 +127,30 @@ export default function Resources() {
             Past questions, lecture notes, and study guides — neatly organized
             by your level.
           </p>
-        </div>
+        </motion.div>
 
         {/* Level Tabs */}
-        <div className={styles.tabs}>
+        <motion.div
+          className={styles.tabs}
+          initial={{ opacity: 0, y: 28 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+        >
           {levels.map((lvl, i) => (
-            <button
+            <motion.button
               key={lvl.level}
               className={`${styles.tab} ${activeLevel === i ? styles.tabActive : ""}`}
               onClick={() => setActiveLevel(i)}
+              whileTap={{ scale: 0.98 }}
+              whileHover={{ y: -2 }}
+              transition={{ type: "spring", stiffness: 260, damping: 22 }}
             >
               {lvl.level}
-            </button>
-          ))}
-        </div>
+            </motion.button>
+          )
+           )
+            }
+        </motion.div>
 
         {/* Loader */}
         {loading ? (
@@ -97,28 +159,65 @@ export default function Resources() {
             <p className={styles.loaderText}>Fetching resources...</p>
           </div>
         ) : (
-          <div className={styles.levelBlock}>
-            <div className={styles.levelHeader}>
-              <div>
-                <h3 className={styles.levelTitle}>{current.level}</h3>
-                <p className={styles.levelSub}>{current.subtitle}</p>
-              </div>
-              <div className={styles.fileCount}>{current.resources.length} Courses</div>
-            </div>
-
-            <div className={styles.resourceGrid}>
-              {current.resources.map((res) => (
-                <div key={res.id} className={styles.resourceCard}>
-                  <div className={styles.resourceInfo}>
-                    <h4 className={styles.resourceTitle}>{res.name}</h4>
-                    <p className={styles.resourceSub}>{res.code} — {res.department}</p>
-                  </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeLevel}
+              className={styles.levelBlock}
+              initial={{ opacity: 0, y: 32 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -18 }}
+              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              layout
+            >
+              <motion.div
+                className={styles.levelHeader}
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                layout
+              >
+                <div>
+                  <h3 className={styles.levelTitle}>{current.level}</h3>
+                  <p className={styles.levelSub} > {current.subtitle}</p>
                 </div>
-              ))}
-            </div>
-          </div>
+                <motion.div
+                  className={styles.fileCount}
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                  layout
+                >
+                  {current.resources.length} Courses
+                </motion.div>
+              </motion.div>
+
+              <motion.div
+                className={styles.resourceGrid}
+                variants={contentFade}
+                initial="hidden"
+                animate="visible"
+                layout
+              >
+                {current.resources.map((res) => (
+                  <motion.div
+                    key={res.id}
+                    className={styles.resourceCard}
+                    variants={itemFade}
+                    whileHover={{ y: -4, boxShadow: "0 18px 45px rgba(34, 133, 58, 0.1)" }}
+                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    layout
+                  >
+                    <div className={styles.resourceInfo}>
+                      <h4 className={styles.resourceTitle}>{res.name}</h4>
+                      <p className={styles.resourceSub}>{res.code} — {res.department}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>
         )}
       </div>
-    </section>
+    </motion.section>
   );
 }

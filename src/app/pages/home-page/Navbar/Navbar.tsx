@@ -2,6 +2,7 @@
 import { useState } from "react";
 import styles from "./Navbar.module.css";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 const Navbar: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -10,15 +11,23 @@ const Navbar: React.FC = () => {
   const navLinks = ["About", "Resources", "Excos", "Updates", "Results", "Events", "Contact"];
 
   return (
-    <nav className={styles.navbar}>
+    <motion.nav
+      className={styles.navbar}
+      initial={{ y: -80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{
+        duration: 0.8,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+    >
       <div className={styles.inner}>
         {/* Logo */}
         <a href="#" className={styles.logo}>
           <span className={styles.logoIcon}>N</span>
-        <span className={styles.logoText}>
-          <span className={styles.na}>NAC</span>
-          <span className={styles.cos}>OS</span>
-        </span>
+          <span className={styles.logoText}>
+            <span className={styles.na}>NAC</span>
+            <span className={styles.cos}>OS</span>
+          </span>
         </a>
 
         {/* Desktop Nav */}
@@ -72,7 +81,7 @@ const Navbar: React.FC = () => {
           </div>
         </div>
       )}
-    </nav>
+    </motion.nav>
   );
 }
 

@@ -1,0 +1,69 @@
+.footer {
+  background: #050f08;
+  padding: 2.5rem 0;
+  border-top: 1px solid rgba(45, 186, 78, 0.1);
+}
+
+.inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.logoNac {
+  color: white;
+}
+
+.logoOs {
+  color: var(--green-accent);
+}
+
+.logoNig {
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 400;
+}
+
+.links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.link {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  transition: color 0.2s;
+  text-decoration: none;
+}
+
+.link:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.copy {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+@media (max-width: 768px) {
+  .inner {
+    flex-direction: column;
+    text-align: center;
+  }
+}

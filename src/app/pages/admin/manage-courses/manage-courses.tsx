@@ -4,6 +4,7 @@ import {
   Plus, FileText, Upload, X, Search, Edit2, Trash2,
   BookOpen, FolderOpen, Download, CheckCircle, AlertCircle
 } from 'lucide-react';
+import Validator from '@/app/validators/auth-validator';
 
 // Types based on schema
 interface Course {
@@ -66,7 +67,7 @@ const departments = [
   'Data Science'
 ];
 
-function App() {
+const CourseManagement: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>(initialCourses);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
@@ -222,9 +223,9 @@ function App() {
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-emerald-100 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-5">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-11 h-11 bg-linear-to-br from-emerald-600 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-11 h-11 bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] rounded-xl flex items-center justify-center shadow-lg border border-white/10">
                 <BookOpen className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -236,7 +237,7 @@ function App() {
             </div>
             <button
               onClick={() => handleOpenModal()}
-              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-all shadow-md hover:shadow-lg"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white rounded-xl font-medium transition-all shadow-md hover:shadow-lg border border-[#0e2d3d]/50 w-full md:w-auto"
             >
               <Plus size={18} />
               Add Course
@@ -248,7 +249,7 @@ function App() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Filters */}
         <div className="bg-white rounded-2xl border border-emerald-100 p-5 mb-8 shadow-sm">
-          <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex flex-col md:flex-row flex-wrap gap-4 items-end">
             <div className="flex-1 min-w-50">
               <label className="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-1.5 block">Search</label>
               <div className="relative">
@@ -262,7 +263,7 @@ function App() {
                 />
               </div>
             </div>
-            <div className="w-48">
+            <div className="w-full md:w-48">
               <label className="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-1.5 block">Department</label>
               <select
                 value={selectedDepartment}
@@ -275,7 +276,7 @@ function App() {
                 ))}
               </select>
             </div>
-            <div className="w-32">
+            <div className="w-full md:w-32">
               <label className="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-1.5 block">Level</label>
               <select
                 value={selectedLevel}
@@ -291,7 +292,7 @@ function App() {
             {(selectedDepartment || selectedLevel || searchTerm) && (
               <button
                 onClick={() => { setSelectedDepartment(''); setSelectedLevel(''); setSearchTerm(''); }}
-                className="px-4 py-2.5 text-emerald-600 hover:text-emerald-700 text-sm font-medium"
+                className="px-4 py-2.5 text-emerald-600 hover:text-emerald-700 text-sm font-medium w-full md:w-auto"
               >
                 Clear filters
               </button>
@@ -576,8 +577,9 @@ function App() {
           to { opacity: 1; transform: scale(1); }
         }
       `}</style>
+      <Validator/>
     </div>
   );
 }
 
-export default App;
+export default CourseManagement;

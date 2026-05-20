@@ -27,8 +27,14 @@
   --white: #ffffff;
 }
 
+
+
+
+
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 body {
@@ -37,6 +43,8 @@ body {
   color: var(--text-dark);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 h1, h2, h3, h4, h5, h6 {

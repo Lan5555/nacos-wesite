@@ -2,10 +2,8 @@
 import CoreService from '@/app/hooks/core-service';
 import { useToast } from '@/app/providers/toast-provider';
 import React, { FormEvent, useEffect, useState } from 'react';
-import {BookOpen,BarChart3,CalendarDays,Bell,Users, Loader,} from "lucide-react";
+import {BookOpen,BarChart3,CalendarDays,Bell,Users, LogIn, Loader,} from "lucide-react";
 import { useRouter } from 'next/navigation';
-import { FaRegEyeSlash,FaRegEye } from "react-icons/fa6";
-
 
 
 const coreService:CoreService = new CoreService();
@@ -18,8 +16,6 @@ const NacosLogin: React.FC = () => {
   const [loginPw, setLoginPw] = useState('');
   const [loading, setLoading] = useState<boolean>(false);
   const [showLoginPw, setShowLoginPw] = useState(false);
-  const [matLoading, setMatLoading] = useState<boolean>(false);
-
 
   // Signup form state
   const [firstName, setFirstName] = useState('');
@@ -66,51 +62,27 @@ const NacosLogin: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     const payload = {
-      "mat_no": loginId,
+      "email": loginId,
       "password": loginPw,
     }
     try{
-      const res = await coreService.send('auth/login-user', payload);
+      const res = await coreService.send('auth/login-admin', payload);
       if(res.success){
         sessionStorage.setItem('token', res.data.access_token);
+        sessionStorage.setItem('admin', JSON.stringify(res.data.admin));
+        console.log(res.data.admin)
         showToast(res.message || 'Login successful','success');
-        router.push('/pages/student-portal');
+        router.push('/pages/admin');
       }else{
         showToast(res.message || 'Login failed. Please check your credentials and try again.','error');
       }
     }catch(err){
         showToast('Login failed. Please check your credentials and try again.','error');
     }finally{
-      setLoading(false);
+        setLoading(false);
     }
   };
 
-  const verifyMatNumber = async() => {
-      setMatLoading(true);
-      try{
-        const res =  await coreService.get(`users/verify-mat-no?mat_no=${loginId}`);
-        if(res.success && res.data != null){
-          showToast('Create a new Password');
-          router.push('/pages/login/reset-password');
-        }else{
-
-        }
-      }catch(e:any){
-        showToast(e.message);
-      }finally{
-        setMatLoading(false);
-      }
-  }
-
-  useEffect(() => {
-  if (loginId.length !== 15) return;
-
-  const timer = setTimeout(() => {
-    verifyMatNumber();
-  }, 800);
-
-  return () => clearTimeout(timer);
-}, [loginId]);
 
   const handleSignup = (e:any) => {
     e.preventDefault();
@@ -121,7 +93,7 @@ const NacosLogin: React.FC = () => {
 
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
       {/* LEFT PANEL */}
-      <div className="hidden lg:flex flex-col justify-between bg-linear-to-br from-[#062206] via-[#0e3d0e] to-[#165716] p-12 relative overflow-hidden">
+      <div className="hidden lg:flex flex-col justify-between bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] p-12 relative overflow-hidden">
         {/* Background decorations */}
         <div className="absolute -top-20 -right-20 w-100 h-100 rounded-full bg-[radial-gradient(circle,rgba(60,196,60,0.15),transparent_70%)]" />
         <div className="absolute -bottom-16 -left-16 w-75 h-75 rounded-full bg-[radial-gradient(circle,rgba(40,162,40,0.1),transparent_70%)]" />
@@ -129,7 +101,7 @@ const NacosLogin: React.FC = () => {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-11 h-11 rounded-xl bg-linear-to-br from-[#28a228] to-[#72d872] flex items-center justify-center font-bold text-white text-base">N</div>
+            <div className="w-11 h-11 rounded-xl bg-linear-to-br from-[#288aa2] to-[#72d5d8] flex items-center justify-center font-bold text-white text-base">N</div>
             <div className="text-white text-xl font-bold tracking-tight">NAC<span className="text-[#72d872]">OS</span> Nigeria</div>
           </div>
 
@@ -160,7 +132,7 @@ const NacosLogin: React.FC = () => {
 
         <div className="relative z-10">
           <p className="text-white/30 text-[0.78rem]">
-            © 2025 NACOS Nigeria · <a href="nacos_main.html" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Visit Website</a> · <a href="#" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Privacy</a> · <a href="#" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Support</a>
+            © 2026 NACOS Nigeria · <a href="nacos_main.html" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Visit Website</a> · <a href="#" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Privacy</a> · <a href="#" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Support</a>
           </p>
         </div>
       </div>
@@ -170,32 +142,33 @@ const NacosLogin: React.FC = () => {
         <div className="w-full max-w-105 animate-[fadeIn_0.5s_ease]">
           <div className="mb-10">
             <span className="text-[0.72rem] font-bold text-[#1e7a1e] tracking-[0.08em] uppercase bg-[#edfaed] border border-[#d4f7d4] px-3 py-1 rounded-full inline-block mb-4">
-              Student Portal
+              Admin Dashboard
             </span>
             <h1 className="text-4xl font-bold text-[#0e2a0e] tracking-[-0.03em] mb-1">
               {activeTab === 'login' ? 'Welcome back' : 'Join NACOS'}
             </h1>
             <p className="text-[0.9rem] text-[#6a8a6a]">
               {activeTab === 'login' 
-                ? 'Sign in to your NACOS account · ' 
+                ? 'Sign in to your Admin dashboard · ' 
                 : 'Create your student account · '}
               <a href="nacos_main.html" className="text-[#1e7a1e] font-semibold no-underline hover:underline">← Back to website</a>
             </p>
           </div>
 
           {/* Tabs */}
-          <div className="flex bg-[#edfaed] rounded-full p-1 mb-8 border border-[#d4f7d4]">
+          <div className="flex bg-[#edfafa] rounded-full p-1 mb-8 border border-[#d4f7d4]">
             <button
               onClick={() => setActiveTab('login')}
               className={`flex-1 py-2 rounded-full text-[0.85rem] font-semibold transition-all cursor-pointer ${
                 activeTab === 'login' 
                   ? 'bg-white text-[#165716] shadow-sm' 
                   : 'bg-transparent text-[#6a8a6a]'
-              }`}
+              } flex justify-center items-center gap-5`}
             >
+                <LogIn/>
               Sign In
             </button>
-            <button
+            {/* <button
               onClick={() => setActiveTab('signup')}
               className={`flex-1 py-2 rounded-full text-[0.85rem] font-semibold transition-all cursor-pointer ${
                 activeTab === 'signup' 
@@ -204,28 +177,21 @@ const NacosLogin: React.FC = () => {
               }`}
             >
               Create Account
-            </button>
+            </button> */}
           </div>
 
           {/* LOGIN FORM */}
           {activeTab === 'login' && (
             <form onSubmit={handleLogin}>
               <div className="flex flex-col gap-1.5 mb-4">
-                <label className="text-[0.78rem] font-bold text-[#3a5a3a] tracking-wide">Matric Number</label>
-                <div className="relative">
+                <label className="text-[0.78rem] font-bold text-[#3a5a3a] tracking-wide">Email Address</label>
                 <input
-                  type="text"
-                  placeholder="e.g. UJ/2005/NS/0022"
+                  type="email"
+                  placeholder="e.g. example@gmail.com"
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
-                  className="w-full px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all"
-                required/>
-                <span
-                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-[#6a8a6a] text-sm select-none"
-                  >
-                    {matLoading ? <Loader className='animate-pulse'/> : ''}
-                  </span>
-              </div>
+                  className="px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all"
+                />
               </div>
 
               <div className="flex flex-col gap-1.5 mb-4">
@@ -237,12 +203,12 @@ const NacosLogin: React.FC = () => {
                     value={loginPw}
                     onChange={(e) => setLoginPw(e.target.value)}
                     className="w-full px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all pr-11"
-                  required/>
+                  />
                   <span
                     onClick={() => setShowLoginPw(!showLoginPw)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-[#6a8a6a] text-sm select-none"
                   >
-                    {showLoginPw ? <FaRegEyeSlash /> : <FaRegEye />}
+                    {showLoginPw ? '🙈' : '👁'}
                   </span>
                 </div>
               </div>
@@ -253,8 +219,8 @@ const NacosLogin: React.FC = () => {
                 <a href="/pages/login/reset-password" className="text-[0.8rem] font-semibold text-[#1e7a1e] no-underline hover:underline">Forgot password?</a>
               </div>
 
-              <button type="submit" className="w-full py-3 rounded-xl bg-[#1e7a1e] text-white text-[0.95rem] font-bold border-none cursor-pointer hover:bg-[#165716] transition-all hover:-translate-y-px hover:shadow-lg hover:shadow-[#1e7a1e]/25 mt-2 flex justify-center items-center">
-                {loading ? <Loader className='animate-spin'></Loader> : 'Sign In to Dashboard →'}
+              <button type="submit" className="w-full py-3 rounded-xl bg-[#061306] text-white text-[0.95rem] font-bold border-none cursor-pointer hover:bg-[#165716] transition-all hover:-translate-y-px hover:shadow-lg hover:shadow-[#1e7a1e]/25 mt-2 flex justify-center items-center">
+               {loading ? <Loader className='animate-spin'></Loader> : 'Sign In to Dashboard →'}
               </button>
 
               <div className="flex items-center gap-3 my-6 text-[#b0c4b0] text-[0.8rem]">
@@ -264,16 +230,16 @@ const NacosLogin: React.FC = () => {
               </div>
 
               <button type="button" className="w-full py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.88rem] font-semibold flex items-center justify-center gap-2.5 text-[#0e2a0e] hover:bg-[#edfaed] hover:border-[#72d872] transition-all cursor-pointer" onClick={() => {
-                router.push('/pages/login/admin-auth');
+                router.push('/pages/login');
               }}>
-                Admin Authentication
+                Student Authentication
               </button>
 
               <div className="text-center mt-6 text-[0.82rem] text-[#6a8a6a]">
-                New to NACOS?{' '}
-                <a href="#" onClick={(e) => { e.preventDefault(); setActiveTab('signup'); }} className="font-bold text-[#1e7a1e] no-underline hover:underline">
+                Manage and handle all activities of NACOS
+                {/* <a href="#" onClick={(e) => { e.preventDefault(); setActiveTab('signup'); }} className="font-bold text-[#1e7a1e] no-underline hover:underline">
                   Create your account
-                </a>
+                </a> */}
               </div>
             </form>
           )}
@@ -290,7 +256,7 @@ const NacosLogin: React.FC = () => {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     className="px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all"
-                  required/>
+                  />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[0.78rem] font-bold text-[#3a5a3a] tracking-wide">Last Name</label>
@@ -300,7 +266,7 @@ const NacosLogin: React.FC = () => {
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     className="px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all"
-                  required/>
+                  />
                 </div>
               </div>
 
@@ -312,7 +278,7 @@ const NacosLogin: React.FC = () => {
                   value={matricNumber}
                   onChange={(e) => setMatricNumber(e.target.value)}
                   className="px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all"
-                required/>
+                />
               </div>
 
               <div className="flex flex-col gap-1.5 mb-3">
@@ -323,7 +289,7 @@ const NacosLogin: React.FC = () => {
                   value={universityEmail}
                   onChange={(e) => setUniversityEmail(e.target.value)}
                   className="px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all"
-                required/>
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3 mb-3">
@@ -367,7 +333,7 @@ const NacosLogin: React.FC = () => {
                       checkStrength(e.target.value);
                     }}
                     className="w-full px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all pr-11"
-                 required />
+                  />
                   <span
                     onClick={() => setShowSignupPw(!showSignupPw)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-[#6a8a6a] text-sm select-none"
