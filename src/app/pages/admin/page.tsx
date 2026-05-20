@@ -440,9 +440,27 @@ const AdminPage: React.FC = () => {
     setLogsLoading(false);
   }
 
+  const cleanupOldActivityLogs = useCallback(async () => {
+    try {
+      const lastCleanup = localStorage.getItem('last_log_cleanup');
+      const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
+      
+      if (!lastCleanup || (Date.now() - parseInt(lastCleanup)) > twoDaysInMs) {
+        const res = await service.delete('activity-logs/delete/all');
+        if (res.success) {
+          localStorage.setItem('last_log_cleanup', Date.now().toString());
+          fetchActivityLogs();
+        }
+      }
+    } catch (e) {
+      console.error('Failed to cleanup logs:', e);
+    }
+  }, []);
+
   useEffect(() => {
     loadAdminData();
     fetchActivityLogs();
+    cleanupOldActivityLogs();
   },[]);
 
   //==========================================//
