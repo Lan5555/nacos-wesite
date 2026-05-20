@@ -1,12 +1,12 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Plus, FileText, Upload, X, Search, Edit2, Trash2,
-  BookOpen, FolderOpen, Download, CheckCircle, AlertCircle
+  BookOpen, FolderOpen, Download, CheckCircle, AlertCircle, Loader2
 } from 'lucide-react';
 import Validator from '@/app/validators/auth-validator';
+import CoreService from "@/app/hooks/core-service";
 
-// Types based on schema
 interface Course {
   id: string;
   name: string;
@@ -14,50 +14,13 @@ interface Course {
   level: string;
   code: string;
   description: string;
-  document?: {
-    name: string;
-    url: string;
-    size: number;
-    type: string;
-  };
-  createdAt: string;
+  file?: string;
+  downloadUrl?: string;
+  created_at: string;
+  updated_at?: string;
 }
 
-// Mock initial data
-const initialCourses: Course[] = [
-  {
-    id: '1',
-    name: 'Introduction to Software Engineering 2',
-    department: 'Software Engineering II',
-    level: '100',
-    code: 'SEN 102',
-    description: 'Official pdf for Software Engineering 2',
-    document: {
-      name: 'SEN102_Syllabus.pdf',
-      url: '#',
-      size: 2450000,
-      type: 'application/pdf'
-    },
-    createdAt: '2024-09-01'
-  },
-  {
-    id: '2',
-    name: 'Data Structures and Algorithms',
-    department: 'Computer Science',
-    level: '200',
-    code: 'CSC 201',
-    description: 'Advanced data structures and algorithm analysis',
-    document: {
-      name: 'CSC201_Notes.pdf',
-      url: '#',
-      size: 3800000,
-      type: 'application/pdf'
-    },
-    createdAt: '2024-09-01'
-  }
-];
-
-const levels = ['100', '200', '300', '400', '500'];
+const levels = ['100', '200', '300', '400'];
 const departments = [
   'Computer Science',
   'Software Engineering I',
@@ -67,8 +30,12 @@ const departments = [
   'Data Science'
 ];
 
+const service = new CoreService();
+
 const CourseManagement: React.FC = () => {
-  const [courses, setCourses] = useState<Course[]>(initialCourses);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -89,6 +56,25 @@ const CourseManagement: React.FC = () => {
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
+  // Fetch all courses
+  const fetchCourses = async () => {
+    try {
+      setPageLoading(true);
+      const result = await service.get("courses/find-all-courses");
+      if (result.success) {
+        setCourses(result.data ?? []);
+      }
+    } catch {
+      showToast("Failed to load courses", "error");
+    } finally {
+      setPageLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
   const handleOpenModal = (course?: Course) => {
     if (course) {
       setEditingCourse(course);
@@ -102,13 +88,7 @@ const CourseManagement: React.FC = () => {
       setSelectedFile(null);
     } else {
       setEditingCourse(null);
-      setFormData({
-        name: '',
-        department: '',
-        level: '',
-        code: '',
-        description: '',
-      });
+      setFormData({ name: '', department: '', level: '', code: '', description: '' });
       setSelectedFile(null);
     }
     setIsModalOpen(true);
@@ -117,13 +97,7 @@ const CourseManagement: React.FC = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingCourse(null);
-    setFormData({
-      name: '',
-      department: '',
-      level: '',
-      code: '',
-      description: '',
-    });
+    setFormData({ name: '', department: '', level: '', code: '', description: '' });
     setSelectedFile(null);
   };
 
@@ -138,63 +112,103 @@ const CourseManagement: React.FC = () => {
     }
   };
 
-  const handleSubmit = () => {
-    if (!formData.name || !formData.department || !formData.level || !formData.code) {
-      showToast('Please fill in all required fields', 'error');
-      return;
-    }
+  
 
+  const handleSubmit = async () => {
+  if (!formData.name || !formData.department || !formData.level || !formData.code) {
+    showToast('Please fill in all required fields', 'error');
+    return;
+  }
+
+  setSubmitting(true);
+
+  try {
     if (editingCourse) {
-      // Update existing course
-      setCourses(courses.map(course =>
-        course.id === editingCourse.id
-          ? {
-              ...course,
-              ...formData,
-              document: selectedFile
-                ? {
-                    name: selectedFile.name,
-                    url: URL.createObjectURL(selectedFile),
-                    size: selectedFile.size,
-                    type: selectedFile.type
-                  }
-                : course.document
-            }
-          : course
-      ));
+      
+      const updateResult = await service.send(
+        `courses/update-course?id=${editingCourse.id}`, {
+          name: formData.name,
+          department: formData.department,
+          level: formData.level,
+          code: formData.code,
+          description: formData.description,
+        }
+      );
+
+      if (!updateResult.success) {
+        showToast(updateResult.message || 'Failed to update course', 'error');
+        return;
+      }
+
+      // Step 2 — Upload file only if new one selected
+      if (selectedFile) {
+        const uploadResult = await service.upload(
+          `courses/update-course?id=${editingCourse.id}`,
+          { file: selectedFile },
+          "POST"
+        );
+        if (!uploadResult.success) {
+          showToast('Course updated but file upload failed', 'error');
+          return;
+        }
+      }
+
       showToast('Course updated successfully', 'success');
+
     } else {
-      // Create new course
-      const newCourse: Course = {
-        id: Date.now().toString(),
-        ...formData,
-        document: selectedFile
-          ? {
-              name: selectedFile.name,
-              url: URL.createObjectURL(selectedFile),
-              size: selectedFile.size,
-              type: selectedFile.type
-            }
-          : undefined,
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      setCourses([newCourse, ...courses]);
+      //  Step 1 — Create with JSON only
+      const createResult = await service.send("courses/create-course", {
+        name: formData.name,
+        department: formData.department,
+        level: formData.level,
+        code: formData.code,
+        description: formData.description,
+      });
+
+      if (!createResult.success) {
+        showToast(createResult.message || 'Failed to create course', 'error');
+        return;
+      }
+
+      const newId = createResult.data?.id;
+
+      //  Step 2 — Upload file if selected
+      if (selectedFile && newId) {
+        const uploadResult = await service.upload(
+          `courses/update-course?id=${newId}`,
+          { file: selectedFile },
+         "POST"
+        );
+        if (!uploadResult.success) {
+          showToast('Course created but file upload failed', 'error');
+          return;
+        }
+      }
+
       showToast('Course created successfully', 'success');
     }
+
+    await fetchCourses();
     handleCloseModal();
-  };
 
-  const handleDeleteCourse = (id: string) => {
+  } catch (error) {
+    console.error(error);
+    showToast('Something went wrong. Please try again.', 'error');
+  } finally {
+    setSubmitting(false);
+  }
+};
+
+  const handleDeleteCourse = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this course?')) {
-      setCourses(courses.filter(course => course.id !== id));
-      showToast('Course deleted successfully', 'success');
+      try {
+        await service.delete(`courses/delete-course?id=${id}`);
+        await fetchCourses();
+        showToast('Course deleted successfully', 'success');
+      } catch {
+        showToast('Failed to delete course', 'error');
+      }
     }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   const filteredCourses = courses.filter(course => {
@@ -300,93 +314,101 @@ const CourseManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* Course Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.map((course) => (
-            <div
-              key={course.id}
-              className="group bg-white rounded-2xl border border-emerald-100 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-            >
-              {/* Card Header */}
-              <div className="relative p-5 pb-3 border-b border-emerald-50 bg-linear-to-r from-emerald-50/30 to-transparent">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-md">
-                        {course.code}
-                      </span>
-                      <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-xs font-medium rounded-md">
-                        {course.level}L
-                      </span>
-                    </div>
-                    <h3 className="font-bold text-lg text-emerald-900 leading-tight mb-1">
-                      {course.name}
-                    </h3>
-                    <p className="text-sm text-emerald-600/70">{course.department}</p>
-                  </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => handleOpenModal(course)}
-                      className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
-                    >
-                      <Edit2 size={15} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteCourse(course.id)}
-                      className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card Body */}
-              <div className="p-5">
-                <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-2">
-                  {course.description}
-                </p>
-
-                {/* Document Section */}
-                {course.document ? (
-                  <div className="bg-emerald-50/40 rounded-xl p-3 flex items-center gap-3 border border-emerald-100">
-                    <div className="w-9 h-9 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
-                      <FileText size={16} className="text-emerald-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-emerald-800 truncate">{course.document.name}</p>
-                      <p className="text-xs text-emerald-500">{formatFileSize(course.document.size)}</p>
-                    </div>
-                    <button
-                      onClick={() => window.open(course.document?.url, '_blank')}
-                      className="p-2 text-emerald-500 hover:bg-emerald-100 rounded-lg transition-colors"
-                    >
-                      <Download size={15} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 border border-gray-100">
-                    <FolderOpen size={16} className="text-gray-400" />
-                    <span className="text-sm text-gray-400">No document uploaded</span>
-                  </div>
-                )}
-
-                <div className="mt-4 pt-3 border-t border-emerald-50 flex items-center justify-between">
-                  <span className="text-xs text-emerald-400">
-                    Added {course.createdAt}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {filteredCourses.length === 0 && (
-          <div className="text-center py-16">
-            <BookOpen className="w-16 h-16 text-emerald-200 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-500">No courses found</h3>
-            <p className="text-sm text-gray-400 mt-1">Try adjusting your search or filters</p>
+        {/* Page Loader */}
+        {pageLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Loader2 size={40} className="text-emerald-600 animate-spin" />
+            <p className="text-emerald-600/70 text-sm font-medium">Loading courses...</p>
           </div>
+        ) : (
+          <>
+            {/* Course Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredCourses.map((course) => (
+                <div
+                  key={course.id}
+                  className="group bg-white rounded-2xl border border-emerald-100 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                >
+                  <div className="relative p-5 pb-3 border-b border-emerald-50 bg-linear-to-r from-emerald-50/30 to-transparent">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-md">
+                            {course.code}
+                          </span>
+                          <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-xs font-medium rounded-md">
+                            {course.level}L
+                          </span>
+                        </div>
+                        <h3 className="font-bold text-lg text-emerald-900 leading-tight mb-1">
+                          {course.name}
+                        </h3>
+                        <p className="text-sm text-emerald-600/70">{course.department}</p>
+                      </div>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleOpenModal(course)}
+                          className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                        >
+                          <Edit2 size={15} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCourse(course.id)}
+                          className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-5">
+                    <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-2">
+                      {course.description}
+                    </p>
+
+                    {/* ✅ Use downloadUrl from API */}
+                    {course.downloadUrl ? (
+                      <div className="bg-emerald-50/40 rounded-xl p-3 flex items-center gap-3 border border-emerald-100">
+                        <div className="w-9 h-9 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
+                          <FileText size={16} className="text-emerald-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-emerald-800 truncate">{course.code} Document</p>
+                          <p className="text-xs text-emerald-500">PDF File</p>
+                        </div>
+                        <button
+                          onClick={() => window.open(course.downloadUrl, '_blank')}
+                          className="p-2 text-emerald-500 hover:bg-emerald-100 rounded-lg transition-colors"
+                        >
+                          <Download size={15} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 border border-gray-100">
+                        <FolderOpen size={16} className="text-gray-400" />
+                        <span className="text-sm text-gray-400">No document uploaded</span>
+                      </div>
+                    )}
+
+                    <div className="mt-4 pt-3 border-t border-emerald-50 flex items-center justify-between">
+                      <span className="text-xs text-emerald-400">
+                        Added {new Date(course.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {filteredCourses.length === 0 && (
+              <div className="text-center py-16">
+                <BookOpen className="w-16 h-16 text-emerald-200 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-500">No courses found</h3>
+                <p className="text-sm text-gray-400 mt-1">Try adjusting your search or filters</p>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -409,7 +431,6 @@ const CourseManagement: React.FC = () => {
             </div>
 
             <div className="p-6 space-y-5">
-              {/* Course Name */}
               <div>
                 <label className="block text-sm font-semibold text-emerald-800 mb-1.5">
                   Course Name <span className="text-red-500">*</span>
@@ -424,7 +445,6 @@ const CourseManagement: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {/* Course Code */}
                 <div>
                   <label className="block text-sm font-semibold text-emerald-800 mb-1.5">
                     Course Code <span className="text-red-500">*</span>
@@ -437,7 +457,6 @@ const CourseManagement: React.FC = () => {
                     className="w-full px-4 py-2.5 bg-emerald-50/40 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
                   />
                 </div>
-                {/* Level */}
                 <div>
                   <label className="block text-sm font-semibold text-emerald-800 mb-1.5">
                     Level <span className="text-red-500">*</span>
@@ -455,7 +474,6 @@ const CourseManagement: React.FC = () => {
                 </div>
               </div>
 
-              {/* Department */}
               <div>
                 <label className="block text-sm font-semibold text-emerald-800 mb-1.5">
                   Department <span className="text-red-500">*</span>
@@ -472,11 +490,8 @@ const CourseManagement: React.FC = () => {
                 </select>
               </div>
 
-              {/* Description */}
               <div>
-                <label className="block text-sm font-semibold text-emerald-800 mb-1.5">
-                  Description
-                </label>
+                <label className="block text-sm font-semibold text-emerald-800 mb-1.5">Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -486,12 +501,10 @@ const CourseManagement: React.FC = () => {
                 />
               </div>
 
-              {/* File Upload */}
               <div>
-                <label className="block text-sm font-semibold text-emerald-800 mb-1.5">
-                  Course Document
-                </label>
-                <div className="border-2 border-dashed border-emerald-200 rounded-xl p-5 text-center hover:border-emerald-400 transition-colors cursor-pointer bg-emerald-50/20"
+                <label className="block text-sm font-semibold text-emerald-800 mb-1.5">Course Document</label>
+                <div
+                  className="border-2 border-dashed border-emerald-200 rounded-xl p-5 text-center hover:border-emerald-400 transition-colors cursor-pointer bg-emerald-50/20"
                   onClick={() => document.getElementById('fileInput')?.click()}
                 >
                   <input
@@ -512,10 +525,10 @@ const CourseManagement: React.FC = () => {
                         <X size="14" className="text-emerald-500" />
                       </button>
                     </div>
-                  ) : editingCourse?.document ? (
+                  ) : editingCourse?.downloadUrl ? (
                     <div className="flex items-center justify-center gap-3">
                       <FileText size="20" className="text-emerald-500" />
-                      <span className="text-sm text-emerald-700">{editingCourse.document.name}</span>
+                      <span className="text-sm text-emerald-700">{editingCourse.code} Document</span>
                       <span className="text-xs text-emerald-400">(keep existing)</span>
                     </div>
                   ) : (
@@ -538,9 +551,14 @@ const CourseManagement: React.FC = () => {
               </button>
               <button
                 onClick={handleSubmit}
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors shadow-md"
+                disabled={submitting}
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 flex items-center gap-2"
               >
-                {editingCourse ? 'Save Changes' : 'Create Course'}
+                {submitting ? (
+                  <><Loader2 size={16} className="animate-spin" /> Processing...</>
+                ) : (
+                  editingCourse ? 'Save Changes' : 'Create Course'
+                )}
               </button>
             </div>
           </div>
@@ -548,34 +566,14 @@ const CourseManagement: React.FC = () => {
       )}
 
       <style>{`
-        .animate-in {
-          animation: animateIn 0.2s ease-out;
-        }
-        .slide-in-from-right-5 {
-          animation: slideInRight 0.3s ease-out;
-        }
-        .fade-in {
-          animation: fadeIn 0.2s ease-out;
-        }
-        .zoom-in-95 {
-          animation: zoomIn 0.2s ease-out;
-        }
-        @keyframes animateIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes zoomIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
+        .animate-in { animation: animateIn 0.2s ease-out; }
+        .slide-in-from-right-5 { animation: slideInRight 0.3s ease-out; }
+        .fade-in { animation: fadeIn 0.2s ease-out; }
+        .zoom-in-95 { animation: zoomIn 0.2s ease-out; }
+        @keyframes animateIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
       `}</style>
       <Validator/>
     </div>
