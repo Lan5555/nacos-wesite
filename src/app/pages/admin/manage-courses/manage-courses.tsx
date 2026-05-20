@@ -210,7 +210,7 @@ const CourseManagement: React.FC = () => {
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50">
       {/* Toast Notification */}
       {toast.show && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-right-5 fade-in duration-300">
+        <div className="fixed top-6 right-6 z-50 animate-in slide-in-from-right-5 fade-in duration-300">
           <div className={`flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg ${
             toast.type === 'success' ? 'bg-emerald-900 text-white' : 'bg-red-600 text-white'
           }`}>
