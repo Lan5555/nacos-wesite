@@ -95,7 +95,7 @@ export default function ToastProvider({ children }: Props) {
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ duration: 0.2 }}
               className="
-                absolute top-5 right-5
+                fixed top-5 right-5
                 flex items-center gap-3
                 min-w-85
                 rounded-xl

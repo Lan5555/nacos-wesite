@@ -38,7 +38,7 @@ const Navbar: React.FC = () => {
             router.push('/pages/login')
 
           }}>Sign In</button>
-          <button className={styles.portal} onClick={() => router.push('/pages/login')}>Student Portal →</button>
+          <button className={styles.portal} onClick={() => router.push('/pages/student')}>Student Portal →</button>
         </div>
 
         {/* Mobile Hamburger */}
