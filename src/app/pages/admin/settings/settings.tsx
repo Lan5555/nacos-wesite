@@ -131,6 +131,21 @@ const AdminSettings:React.FC = () => {
         setLoading(false);
       }
     }
+
+    const fetchActivityLogs = async() => {
+      try{
+        const res = await service.get('activity-logs/find-all');
+        if(res.success){
+          setActivityLogs(res.data);
+        }else{
+          setActivityLogs([]);
+          showToast(res.message || 'Failed to fetch activity logs','error')
+        }
+        }catch(e:any){
+        showToast(e,'error');
+      }
+    }
+
   //=====================//
 
   const handleOpenModal = (admin?: AdminUser) => {
@@ -166,6 +181,7 @@ const AdminSettings:React.FC = () => {
 
   useEffect(() => {
     fetchAdmins();
+    fetchActivityLogs();
   },[])
 
   const handleCloseModal = () => {
@@ -674,8 +690,8 @@ const AdminSettings:React.FC = () => {
                 <button className="text-sm text-emerald-600 hover:text-emerald-700">View All</button>
               </div>
               <div className="divide-y divide-emerald-50">
-                {activityLogs.map((log) => (
-                  <div key={log.id} className="px-6 py-4 hover:bg-emerald-50/30 transition-colors">
+                {activityLogs.map((log, index) => (
+                  <div key={`${log.id}-${index}`} className="px-6 py-4 hover:bg-emerald-50/30 transition-colors">
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
                         {log.adminName === 'System' ? <Shield size="14" className="text-emerald-600" /> : <UserCog size="14" className="text-emerald-600" />}

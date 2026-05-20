@@ -50,6 +50,7 @@ import { useRouter } from 'next/navigation';
 import CourseManagement from './manage-courses/manage-courses';
 import ResultsManagement from './manage-results/manage-results';
 import AdminSettings from './settings/settings';
+import CoreService from '@/app/hooks/core-service';
 
 // --- Types ---
 type Student = {
@@ -95,10 +96,14 @@ type AdminEvent = {
 
 type ActivityLogEntry = {
   id: string;
-  text: string;
-  time: string;
+  adminId: string;
+  adminName: string;
+  action: string;
+  timestamp: string;
+  details: string;
 };
 
+const service:CoreService = new CoreService();
 // --- Initial Data ---
 const initialStudents: Student[] = [
   { id: '1', matric: "NAC/CS/2101", name: "Ada Eze", level: 400, dept: "Computer Science", isRep: false },
@@ -130,10 +135,10 @@ const initialEvents: AdminEvent[] = [
 ];
 
 const initialActivityLog: ActivityLogEntry[] = [
-  { id: '1', text: "Rep Chidi Obi requested event budget review", time: "Sept 19, 10:32 AM" },
-  { id: '2', text: "Staff Dr. Okonkwo approved new merch design", time: "Sept 19, 9:14 AM" },
-  { id: '3', text: "Dues payment of ₦15,000 from 400L student", time: "Sept 18, 4:05 PM" },
-  { id: '4', text: "Meeting with reps scheduled for Friday", time: "Sept 17, 2:00 PM" },
+  { id: '1', adminId: '1', adminName: 'Dr. Okonkwo', action: 'Budget Review', timestamp: '2024-01-15T08:30:00', details: 'Rep Chidi Obi requested event budget review' },
+  { id: '2', adminId: '2', adminName: 'Prof. Adeyemi', action: 'Merch Approval', timestamp: '2024-01-14T16:20:00', details: 'Staff Dr. Okonkwo approved new merch design' },
+  { id: '3', adminId: '1', adminName: 'Dr. Okonkwo', action: 'Payment Recorded', timestamp: '2024-01-14T10:15:00', details: 'Dues payment of ₦15,000 from 400L student' },
+  { id: '4', adminId: '3', adminName: 'Mrs. Eze', action: 'Meeting Scheduled', timestamp: '2024-01-13T14:00:00', details: 'Meeting with reps scheduled for Friday' }
 ];
 
 // --- Helper Functions ---
@@ -203,6 +208,7 @@ const AdminPage: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('overview');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [logsLoading, setLogsLoading] = useState(false);
   const router = useRouter();
   const [studentSearch, setStudentSearch] = useState('');
   const [studentLevelFilter, setStudentLevelFilter] = useState('all');
@@ -216,7 +222,7 @@ const AdminPage: React.FC = () => {
   const [staff, setStaff] = useState<Staff[]>(initialStaff);
   const [transactions, setTransactions] = useState<FinanceTransaction[]>(initialTransactions);
   const [events, setEvents] = useState<AdminEvent[]>(initialEvents);
-  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>(initialActivityLog);
+  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   const [adminData, setAdminData] = useState<Partial<Exco>>({});
 
   // Modal States
@@ -239,13 +245,16 @@ const AdminPage: React.FC = () => {
     setToastMessage(msg);
   };
 
-  const addLog = (text: string) => {
+  const addLog = (action: string, details: string) => {
     const newLog: ActivityLogEntry = {
       id: Date.now().toString(),
-      text,
-      time: 'Just now',
+      adminId: adminData.id || 'system',
+      adminName: adminData.name || 'System',
+      action,
+      details,
+      timestamp: new Date().toISOString(),
     };
-    setActivityLog(prev => [newLog, ...prev.slice(0, 6)]);
+    setActivityLog(prev => [newLog, ...prev.slice(0, 49)]);
   };
 
   const closeModal = (modalName: keyof typeof modals) => {
@@ -269,7 +278,7 @@ const AdminPage: React.FC = () => {
         isRep: false,
       };
       setStudents(prev => [...prev, student]);
-      addLog(`➕ Added new student: ${newStudent.name}`);
+      addLog('Add Student', `Added new student: ${newStudent.name}`);
       showToast(`${newStudent.name} added`);
       closeModal('addStudent');
     } else {
@@ -289,7 +298,7 @@ const AdminPage: React.FC = () => {
         status: 'Active',
       };
       setReps(prev => [...prev, newRep]);
-      addLog(`👑 Appointed ${student.name} as Departmental Rep`);
+      addLog('Appoint Rep', `Appointed ${student.name} as Departmental Rep`);
       showToast(`${student.name} is now a Rep`);
     }
   };
@@ -297,7 +306,7 @@ const AdminPage: React.FC = () => {
   const handleDismissRep = (repName: string) => {
     setReps(prev => prev.filter(r => r.name !== repName));
     setStudents(prev => prev.map(s => s.name === repName ? { ...s, isRep: false } : s));
-    addLog(`🚫 Dismissed rep ${repName}`);
+    addLog('Dismiss Rep', `Dismissed rep ${repName}`);
     showToast(`${repName} removed from reps`);
   };
 
@@ -307,7 +316,7 @@ const AdminPage: React.FC = () => {
       setReps(prev => prev.filter(r => r.name !== student.name));
     }
     setStudents(prev => prev.filter(s => s.id !== studentId));
-    addLog(`🗑️ Removed student ${student?.matric}`);
+    addLog('Remove Student', `Removed student ${student?.matric}`);
     showToast('Student removed');
   };
 
@@ -321,7 +330,7 @@ const AdminPage: React.FC = () => {
         status: 'Active',
       };
       setStaff(prev => [...prev, staffMember]);
-      addLog(`🧑‍🏫 New staff added: ${newStaff.name}`);
+      addLog('Add Staff', `New staff added: ${newStaff.name}`);
       showToast('Staff member added');
       closeModal('addStaff');
     } else {
@@ -339,7 +348,7 @@ const AdminPage: React.FC = () => {
         paidBy: newPayment.paidBy || 'Anonymous',
       };
       setTransactions(prev => [transaction, ...prev]);
-      addLog(`💰 Payment recorded: ${newPayment.amount} from ${transaction.paidBy}`);
+      addLog('Record Payment', `Payment recorded: ${newPayment.amount} from ${transaction.paidBy}`);
       showToast('Payment recorded');
       closeModal('recordPayment');
     } else {
@@ -356,7 +365,7 @@ const AdminPage: React.FC = () => {
         status: 'Pending Approval',
       };
       setEvents(prev => [...prev, event]);
-      addLog(`📅 New event created: ${newEvent.title}`);
+      addLog('Create Event', `New event created: ${newEvent.title}`);
       showToast('Event created');
       closeModal('createEvent');
     } else {
@@ -367,14 +376,14 @@ const AdminPage: React.FC = () => {
   const handleApproveEvent = (eventId: string) => {
     setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: 'Approved' } : e));
     const event = events.find(e => e.id === eventId);
-    addLog(`✅ Event "${event?.title}" approved`);
+    addLog('Approve Event', `Event "${event?.title}" approved`);
     showToast('Event approved');
   };
 
   const handleDeleteEvent = (eventId: string) => {
     const event = events.find(e => e.id === eventId);
     setEvents(prev => prev.filter(e => e.id !== eventId));
-    addLog(`❌ Event "${event?.title}" removed`);
+    addLog('Delete Event', `Event "${event?.title}" removed`);
     showToast('Event removed');
   };
 
@@ -416,8 +425,24 @@ const AdminPage: React.FC = () => {
     }
   }
 
+  const fetchActivityLogs = async() => {
+    setLogsLoading(true);
+    try {
+      const res = await service.get('activity-logs/find-all');
+      if(res.success){
+        setActivityLog(res.data);
+      }else{
+        showToast(res.message);
+      }
+    }catch(e:any){
+      showToast(e);
+    }
+    setLogsLoading(false);
+  }
+
   useEffect(() => {
     loadAdminData();
+    fetchActivityLogs();
   },[]);
 
   //==========================================//
@@ -640,12 +665,19 @@ const AdminPage: React.FC = () => {
 
   const renderActivity = () => (
     <div className="space-y-4">
-      {activityLog.map(log => (
+      {logsLoading ? (
+        <div className="flex flex-col items-center justify-center py-10 gap-2">
+          <RefreshCw className="w-6 h-6 text-emerald-600 animate-spin" />
+          <p className="text-xs text-slate-500 font-medium">Fetching logs...</p>
+        </div>
+      ) : activityLog.length === 0 ? (
+        <div className="text-center py-10 text-slate-400 text-sm">No recent activity found</div>
+      ) : activityLog.map(log => (
         <div key={log.id} className="flex gap-3">
           <div className="w-2 h-2 rounded-full bg-emerald-400 mt-2"></div>
           <div>
-            <div className="text-emerald-800 text-sm">{log.text}</div>
-            <div className="text-xs text-emerald-400 mt-1">{log.time}</div>
+            <div className="text-emerald-800 text-sm font-medium">{log.action}: {log.details}</div>
+            <div className="text-xs text-emerald-400 mt-1">by {log.adminName} · {new Date(log.timestamp).toLocaleString()}</div>
           </div>
         </div>
       ))}
