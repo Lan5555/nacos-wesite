@@ -23,6 +23,7 @@ export interface Exco {
   phone?: string;
   profileImage?: string;
   adminLevel?: number;
+  permissions: string[];
   createdAt: Date;
   updatedAt?: Date;
 }

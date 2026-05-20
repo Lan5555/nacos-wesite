@@ -219,7 +219,7 @@ const NacosLogin: React.FC = () => {
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
                   className="w-full px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all"
-                />
+                required/>
                 <span
                     className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-[#6a8a6a] text-sm select-none"
                   >
@@ -237,7 +237,7 @@ const NacosLogin: React.FC = () => {
                     value={loginPw}
                     onChange={(e) => setLoginPw(e.target.value)}
                     className="w-full px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all pr-11"
-                  />
+                  required/>
                   <span
                     onClick={() => setShowLoginPw(!showLoginPw)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-[#6a8a6a] text-sm select-none"
@@ -290,7 +290,7 @@ const NacosLogin: React.FC = () => {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     className="px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all"
-                  />
+                  required/>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[0.78rem] font-bold text-[#3a5a3a] tracking-wide">Last Name</label>
@@ -300,7 +300,7 @@ const NacosLogin: React.FC = () => {
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     className="px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all"
-                  />
+                  required/>
                 </div>
               </div>
 
@@ -312,7 +312,7 @@ const NacosLogin: React.FC = () => {
                   value={matricNumber}
                   onChange={(e) => setMatricNumber(e.target.value)}
                   className="px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all"
-                />
+                required/>
               </div>
 
               <div className="flex flex-col gap-1.5 mb-3">
@@ -323,7 +323,7 @@ const NacosLogin: React.FC = () => {
                   value={universityEmail}
                   onChange={(e) => setUniversityEmail(e.target.value)}
                   className="px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all"
-                />
+                required/>
               </div>
 
               <div className="grid grid-cols-2 gap-3 mb-3">
@@ -367,7 +367,7 @@ const NacosLogin: React.FC = () => {
                       checkStrength(e.target.value);
                     }}
                     className="w-full px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all pr-11"
-                  />
+                 required />
                   <span
                     onClick={() => setShowSignupPw(!showSignupPw)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-[#6a8a6a] text-sm select-none"

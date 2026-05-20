@@ -5,6 +5,9 @@ import {
   CheckCircle, Search, Filter, Download, Upload, Crown, UserCheck,
   Activity, Clock, Mail, Phone, Calendar, ChevronRight, ChevronDown
 } from 'lucide-react';
+import CoreService from '@/app/hooks/core-service';
+import { useToast } from '@/app/providers/toast-provider';
+import { Exco } from '../manage-excos/manage-excos';
 
 // Types
 interface AdminUser {
@@ -18,7 +21,6 @@ interface AdminUser {
   position?: string;
   level?: number;
   phone?: string;
-  lastActive?: string;
   createdAt: string;
   permissions: string[];
 }
@@ -43,51 +45,6 @@ interface ActivityLog {
   details: string;
 }
 
-// Mock data
-const initialAdmins: AdminUser[] = [
-  {
-    id: '1',
-    name: 'Dr. Okonkwo',
-    email: 'okonkwo@nacos.edu',
-    adminLevel: 3,
-    isStaff: true,
-    department: 'Faculty of Computing',
-    position: 'Dean',
-    phone: '+234 801 234 5678',
-    lastActive: '2024-01-15T10:30:00',
-    createdAt: '2023-01-10T00:00:00',
-    permissions: ['all']
-  },
-  {
-    id: '3',
-    name: 'Nicholas Johnson',
-    email: 'okekejohnson24@gmail.com',
-    adminLevel: 2,
-    isStaff: false,
-    level: 400,
-    department: 'Computer Science',
-    position: 'Director of Tech and Innovation',
-    phone: '09065590812',
-    profileImage: 'https://res.cloudinary.com/dnu13afre/image/upload/v1778946064/excos/jgd9uc8mgdqvqtg2tkjx.jpg',
-    lastActive: '2026-05-16T13:04:31.125Z',
-    createdAt: '2026-05-16T13:04:31.125Z',
-    permissions: ['manage_students', 'manage_events']
-  },
-  {
-    id: '4',
-    name: 'Mrs. Eze',
-    email: 'eze@nacos.edu',
-    adminLevel: 1,
-    isStaff: true,
-    department: 'Finance',
-    position: 'Financial Secretary',
-    phone: '+234 803 456 7890',
-    lastActive: '2024-01-15T09:15:00',
-    createdAt: '2023-09-20T00:00:00',
-    permissions: ['manage_finance']
-  }
-];
-
 const initialSettings: SystemSettings = {
   siteName: 'NACOS Admin Portal',
   siteLogo: '',
@@ -108,28 +65,29 @@ const initialActivityLogs: ActivityLog[] = [
 
 // Permission options
 const allPermissions = [
-  'manage_students', 'manage_events', 'manage_finance', 'manage_admins',
-  'manage_settings', 'view_reports', 'manage_department', 'send_broadcasts'
+  'manage_students', 'manage_events', 'manage_finance', 'manage_excos', 'manage_courses', 'manage_settings', 'manage_department'
 ];
 
 const permissionLabels: Record<string, string> = {
   manage_students: 'Manage Students',
   manage_events: 'Manage Events',
   manage_finance: 'Manage Finance',
-  manage_admins: 'Manage Admins',
+  manage_excos: 'Manage Admins',
   manage_settings: 'Manage Settings',
-  view_reports: 'View Reports',
-  manage_department: 'Manage Department',
-  send_broadcasts: 'Send Broadcasts'
+  manage_courses: 'Manage Courses',
+  manage_department: 'Manage Department'
 };
+const service:CoreService = new CoreService();
 
-const AdminSettings = () => {
-  const [admins, setAdmins] = useState<AdminUser[]>(initialAdmins);
+const AdminSettings:React.FC = () => {
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [settings, setSettings] = useState<SystemSettings>(initialSettings);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(initialActivityLogs);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<AdminUser | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [processing, setProcessing] = useState<boolean>(false);
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'super_admin'>('all');
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
   const [activeTab, setActiveTab] = useState<'admins' | 'settings' | 'activity'>('admins');
@@ -155,6 +113,25 @@ const AdminSettings = () => {
     return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
+  //=======================//
+    const fetchAdmins = async() => {
+      setLoading(true);
+      try{
+        const res = await service.get('admin/find-all');
+        if(res.success){
+          setAdmins(res.data);
+        }else{
+          setAdmins([]);
+          showToast(res.message || 'Failed to fetch admins','error')
+        }
+      }catch(e:any){
+        showToast(e,'error');
+      } finally {
+        setLoading(false);
+      }
+    }
+  //=====================//
+
   const handleOpenModal = (admin?: AdminUser) => {
     if (admin) {
       setEditingAdmin(admin);
@@ -167,7 +144,7 @@ const AdminSettings = () => {
         position: admin.position || '',
         level: admin.level || 100,
         phone: admin.phone || '',
-        permissions: admin.permissions
+        permissions: admin.permissions || []
       });
     } else {
       setEditingAdmin(null);
@@ -186,96 +163,117 @@ const AdminSettings = () => {
     setIsModalOpen(true);
   };
 
+  useEffect(() => {
+    fetchAdmins();
+  },[])
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingAdmin(null);
   };
 
-  const handleSaveAdmin = () => {
+  const handleSaveAdmin = async () => {
     if (!formData.name || !formData.email) {
       showToast('Please fill in all required fields', 'error');
       return;
     }
-
+    setProcessing(true);
     if (editingAdmin) {
-      // Update existing admin
-      setAdmins(admins.map(admin =>
-        admin.id === editingAdmin.id
-          ? {
-              ...admin,
-              name: formData.name,
-              email: formData.email,
-              adminLevel: formData.adminLevel,
-              isStaff: formData.isStaff,
-              department: formData.department,
-              position: formData.position,
-              level: formData.level,
-              phone: formData.phone,
-              permissions: formData.adminLevel >= 2 ? ['all'] : formData.permissions
-            }
-          : admin
-      ));
-      addActivityLog(editingAdmin.name, `Updated admin profile`, `Updated ${formData.name}'s information`);
-      showToast('Admin updated successfully', 'success');
+      try {
+        const res = await service.patch(`admin/update/${editingAdmin.id}`, {
+          ...formData,
+          permissions: formData.adminLevel >= 2 ? ['all'] : formData.permissions.filter(p => p !== 'all')
+        });
+        if (res.success) {
+          await fetchAdmins();
+          addActivityLog(editingAdmin.name, `Updated admin profile`, `Updated ${formData.name}'s information`);
+          showToast('Admin updated successfully', 'success');
+        } else {
+          showToast(res.message || 'Update failed', 'error');
+        }
+      } catch (e: any) {
+        showToast(e.message || 'An error occurred', 'error');
+      }
     } else {
-      // Create new admin
-      const newAdmin: AdminUser = {
-        id: Date.now().toString(),
-        name: formData.name,
-        email: formData.email,
-        adminLevel: formData.adminLevel,
-        isStaff: formData.isStaff,
-        department: formData.department,
-        position: formData.position,
-        level: formData.level,
-        phone: formData.phone,
-        lastActive: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        permissions: formData.adminLevel >= 2 ? ['all'] : formData.permissions
-      };
-      setAdmins([...admins, newAdmin]);
-      addActivityLog('System', `Added new Admin`, `Added ${formData.name} with Level ${formData.adminLevel}`);
-      showToast('Admin added successfully', 'success');
+      try {
+        const res = await service.send('admin/create-admin', {
+          ...formData,
+          permissions: formData.adminLevel >= 2 ? ['all'] : formData.permissions.filter(p => p !== 'all')
+        });
+        if (res.success) {
+          await fetchAdmins();
+          addActivityLog('System', `Added new Admin`, `Added ${formData.name} with Level ${formData.adminLevel}`);
+          showToast('Admin added successfully', 'success');
+        } else {
+          showToast(res.message || 'Creation failed', 'error');
+        }
+      } catch (e: any) {
+        showToast(e.message || 'An error occurred', 'error');
+      }
     }
+    setProcessing(false);
     handleCloseModal();
   };
 
-  const handleDeleteAdmin = (admin: AdminUser) => {
+  const handleDeleteAdmin = async(admin: AdminUser) => {
     if (admin.adminLevel >= 3 && admins.filter(a => a.adminLevel >= 3).length === 1) {
       showToast('Cannot delete the only Super Admin', 'error');
+      return;    }
+    if (admin.adminLevel >= 2) {
+      showToast('Cannot delete a Super Admin', 'error');
       return;
+
     }
     if (window.confirm(`Are you sure you want to remove ${admin.name}?`)) {
-      setAdmins(admins.filter(a => a.id !== admin.id));
-      addActivityLog('System', `Removed admin`, `Removed ${admin.name} (Level ${admin.adminLevel})`);
+      try{
+        const res = await service.delete(`admin/delete/${admin.id}`);
+        if(!res.success){
+          showToast(res.message || 'Deletion failed', 'error');
+        }
+        setAdmins(admins.filter(a => a.id !== admin.id));
+        addActivityLog('System', `Removed admin`, `Removed ${admin.name} (Level ${admin.adminLevel})`);
+      }catch(e){
+        showToast('An error occurred', 'error');
+      }
       showToast('Admin removed successfully', 'success');
     }
   };
 
-  const handlePromoteToSuperAdmin = (admin: AdminUser) => {
-    if (admin.adminLevel >= 3) {
+  const handlePromoteToSuperAdmin = async(admin: AdminUser) => {
+    if (admin.adminLevel >= 2) {
       showToast(`${admin.name} is already a Super Admin`, 'error');
       return;
     }
     setAdmins(admins.map(a =>
       a.id === admin.id
-        ? { ...a, adminLevel: 3, permissions: ['all'] }
+        ? { ...a, adminLevel: 2, permissions: ['all'] }
         : a
     ));
-    addActivityLog('System', `Promoted to Super Admin`, `Promoted ${admin.name} from Admin to Super Admin`);
-    showToast(`${admin.name} is now a Super Admin`, 'success');
   };
 
-  const addActivityLog = (adminName: string, action: string, details: string) => {
-    const newLog: ActivityLog = {
-      id: Date.now().toString(),
-      adminId: 'system',
-      adminName,
-      action,
-      timestamp: new Date().toISOString(),
-      details
-    };
-    setActivityLogs([newLog, ...activityLogs.slice(0, 49)]);
+  const addActivityLog = async (adminName: string, action: string, details: string) => {
+    try {
+      const res = await service.send('activity-logs/create', {
+        adminId: editingAdmin?.id || 'system',
+        adminName,
+        action,
+        details
+      });
+
+      if (res.success) {
+        const newLog: ActivityLog = {
+          id: res.data?.id || Date.now().toString(),
+          adminId: editingAdmin?.id || 'system',
+          adminName,
+          action,
+          timestamp: new Date().toISOString(),
+          details
+        };
+        setActivityLogs([newLog, ...activityLogs.slice(0, 49)]);
+      }
+    } catch (error) {
+      console.error('Failed to log activity:', error);
+    }
   };
 
   const handleUpdateSetting = (key: keyof SystemSettings, value: any) => {
@@ -391,7 +389,7 @@ const AdminSettings = () => {
             <div className="bg-white rounded-2xl border border-emerald-100 p-5 mb-6 shadow-sm">
               <div className="flex flex-wrap gap-4 items-center justify-between">
                 <div className="flex gap-4 flex-1 flex-wrap">
-                  <div className="relative flex-1 min-w-[250px]">
+                  <div className="relative flex-1 min-w-62.5">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />
                     <input
                       type="text"
@@ -422,7 +420,15 @@ const AdminSettings = () => {
             </div>
 
             {/* Admins Table */}
-            <div className="bg-white rounded-2xl border border-emerald-100 overflow-hidden shadow-sm">
+            <div className="bg-white rounded-2xl border border-emerald-100 overflow-hidden shadow-sm relative min-h-100">
+              {(loading || processing) && (
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <RefreshCw className="w-8 h-8 text-emerald-600 animate-spin" />
+                    <p className="text-sm font-medium text-emerald-800">Processing...</p>
+                  </div>
+                </div>
+              )}
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-emerald-50/50 border-b border-emerald-100">
@@ -430,7 +436,6 @@ const AdminSettings = () => {
                       <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">Admin</th>
                       <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">Role</th>
                       <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">Department</th>
-                      <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">Last Active</th>
                       <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">Permissions</th>
                       <th className="px-5 py-4 text-right text-xs font-semibold text-emerald-700 uppercase tracking-wide">Actions</th>
                     </tr>
@@ -439,10 +444,25 @@ const AdminSettings = () => {
                     {filteredAdmins.map((admin) => (
                       <tr key={admin.id} className="hover:bg-emerald-50/30 transition-colors">
                         <td className="px-5 py-4">
-                          <div>
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center overflow-hidden shrink-0">
+                              {admin.profileImage ? (
+                                <img 
+                                  src={admin.profileImage} 
+                                  alt={admin.name} 
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-emerald-700 font-bold text-sm">
+                                  {admin.name.charAt(0).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                            <div>
                             <p className="font-semibold text-emerald-900">{admin.name}</p>
                             <p className="text-xs text-gray-500">{admin.email}</p>
                             {admin.phone && <p className="text-xs text-gray-400 mt-0.5">{admin.phone}</p>}
+                            </div>
                           </div>
                         </td>
                         <td className="px-5 py-4">
@@ -457,12 +477,6 @@ const AdminSettings = () => {
                           )}
                         </td>
                         <td className="px-5 py-4 text-sm text-gray-600">{admin.department || '—'}</td>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-1 text-xs text-gray-500">
-                            <Clock size="12" />
-                            {admin.lastActive ? formatDate(admin.lastActive) : '—'}
-                          </div>
-                        </td>
                         <td className="px-5 py-4">
                           {admin.adminLevel >= 2 ? (
                             <span className="text-xs text-amber-600">Full Access</span>
@@ -509,7 +523,7 @@ const AdminSettings = () => {
                   </tbody>
                 </table>
               </div>
-              {filteredAdmins.length === 0 && (
+              {!loading && filteredAdmins.length === 0 && (
                 <div className="text-center py-16">
                   <Users className="w-16 h-16 text-emerald-200 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-500">No admins found</h3>
@@ -736,7 +750,11 @@ const AdminSettings = () => {
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Admin Level</label>
                   <select
                     value={formData.adminLevel}
-                    onChange={(e) => setFormData({ ...formData, adminLevel: parseInt(e.target.value) })}
+                    onChange={(e) => {
+                      const newLevel = parseInt(e.target.value);
+                      const newPermissions = newLevel >= 2 ? ['all'] : formData.permissions.filter(p => p !== 'all');
+                      setFormData({ ...formData, adminLevel: newLevel, permissions: newPermissions });
+                    }}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
                   >
                     <option value={1}>Level 1 (Admin)</option>

@@ -6,7 +6,7 @@ type Net = {
 }
 
 class CoreService {
-    private BASE_URL: string = "https://nacos-backend-y0vl.onrender.com";
+    private BASE_URL: string = process.env.NEXT_PUBLIC_BASE_URL || '';
 
     setBaseUrl(url: string) {
         this.BASE_URL = url;
@@ -14,7 +14,7 @@ class CoreService {
 
     private getToken(): string | null {
     return sessionStorage.getItem('token');
-}
+   }
 
 private setAuthHeader(headers: HeadersInit = {}) {
     const token = this.getToken();
@@ -166,4 +166,3 @@ public async upload(
 }
 
 export default CoreService;
-

@@ -70,6 +70,7 @@ const NacosLogin: React.FC = () => {
       if(res.success){
         sessionStorage.setItem('token', res.data.access_token);
         sessionStorage.setItem('admin', JSON.stringify(res.data.admin));
+        console.log(res.data.admin)
         showToast(res.message || 'Login successful','success');
         router.push('/pages/admin');
       }else{

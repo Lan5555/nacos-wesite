@@ -412,6 +412,7 @@ const AdminPage: React.FC = () => {
     const admin = sessionStorage.getItem('admin');
     if(admin){
         setAdminData(JSON.parse(admin));
+      
     }
   }
 
@@ -653,17 +654,24 @@ const AdminPage: React.FC = () => {
 
   // Navigation
   const navItems = [
-    { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={18} /> },
-    { id: 'students', label: 'Students', icon: <Users size={18} /> },
-    { id: 'reps', label: 'Dept. Reps', icon: <UserCog size={18} /> },
-    { id: 'courses', label: 'Courses', icon: <HiAcademicCap size={18} /> },
-    { id: 'excos', label: 'Excos', icon: <Users size={18} />},
-    { id: 'results', label: 'Results', icon: <ChartBar size={18} />},
-    { id: 'staff', label: 'Staff Directory', icon: <UserCheck size={18} /> },
-    { id: 'finance', label: 'Finance & Dues', icon: <Coins size={18} /> },
-    { id: 'events', label: 'Events', icon: <CalendarCheck size={18} />, badge: true },
-    { id: 'settings', label: 'Settings', icon: <Cog size={18} /> }
+    { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={18} />, permission: 'all' },
+    { id: 'students', label: 'Students', icon: <Users size={18} />, permission: 'manage_students' },
+    { id: 'reps', label: 'Dept. Reps', icon: <UserCog size={18} />, permission: 'manage_reps' },
+    { id: 'courses', label: 'Courses', icon: <HiAcademicCap size={18} />, permission: 'manage_courses' },
+    { id: 'excos', label: 'Excos', icon: <Users size={18} />, permission: 'manage_excos' },
+    { id: 'results', label: 'Results', icon: <ChartBar size={18} />, permission: 'manage_results' },
+    { id: 'staff', label: 'Staff Directory', icon: <UserCheck size={18} />, permission: 'manage_staff' },
+    { id: 'finance', label: 'Finance & Dues', icon: <Coins size={18} />, permission: 'manage_finance' },
+    { id: 'events', label: 'Events', icon: <CalendarCheck size={18} />, badge: true, permission: 'manage_events' },
+    { id: 'settings', label: 'Settings', icon: <Cog size={18} />, permission: 'manage_settings' }
   ];
+
+  const filteredNavItems = navItems.filter(item => {
+    const userPermissions = adminData.permissions || [];
+    if (userPermissions.includes('all')) return true;
+    if (item.id === 'overview') return true; // Always show overview
+    return userPermissions.includes(item.permission);
+  });
 
   const pageTitles: Record<string, [string, string]> = {
     overview: ['Admin Control Centre', 'Manage reps, approve requests & oversee operations'],
@@ -718,7 +726,7 @@ const AdminPage: React.FC = () => {
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
-          {navItems.map(item => (
+          {filteredNavItems.map(item => (
             <button
               key={item.id}
               onClick={() => {
