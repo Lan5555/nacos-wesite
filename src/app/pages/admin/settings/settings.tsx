@@ -203,7 +203,7 @@ const AdminSettings:React.FC = () => {
         });
         if (res.success) {
           await fetchAdmins();
-          addActivityLog(editingAdmin.name, `Updated admin profile`, `Updated ${formData.name}'s information`);
+          addActivityLog(editingAdmin.name, `Updated admin profile`, `Updated ${formData.name}'s information (${formData.position})`);
           showToast('Admin updated successfully', 'success');
         } else {
           showToast(res.message || 'Update failed', 'error');
@@ -219,7 +219,7 @@ const AdminSettings:React.FC = () => {
         });
         if (res.success) {
           await fetchAdmins();
-          addActivityLog('System', `Added new Admin`, `Added ${formData.name} with Level ${formData.adminLevel}`);
+          addActivityLog('System', `Added new Admin`, `Added ${formData.name} as ${formData.position} with Level ${formData.adminLevel}`);
           showToast('Admin added successfully', 'success');
         } else {
           showToast(res.message || 'Creation failed', 'error');
@@ -248,7 +248,7 @@ const AdminSettings:React.FC = () => {
           showToast(res.message || 'Deletion failed', 'error');
         }
         setAdmins(admins.filter(a => a.id !== admin.id));
-        addActivityLog('System', `Removed admin`, `Removed ${admin.name} (Level ${admin.adminLevel})`);
+        addActivityLog('System', `Removed admin`, `Removed ${admin.name} - ${admin.position} (Level ${admin.adminLevel})`);
       }catch(e){
         showToast('An error occurred', 'error');
       }
@@ -268,7 +268,7 @@ const AdminSettings:React.FC = () => {
     ));
   };
 
-  const addActivityLog = async (adminName: string, action: string, details: string) => {
+   const addActivityLog = async (adminName: string, action: string, details: string) => {
     try {
       const res = await service.send('activity-logs/create', {
         adminId: editingAdmin?.id || 'system',
@@ -478,6 +478,7 @@ const AdminSettings:React.FC = () => {
                             <div>
                             <p className="font-semibold text-emerald-900">{admin.name}</p>
                             <p className="text-xs text-gray-500">{admin.email}</p>
+                            {admin.position && <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight mt-0.5">{admin.position}</p>}
                             {admin.phone && <p className="text-xs text-gray-400 mt-0.5">{admin.phone}</p>}
                             </div>
                           </div>
