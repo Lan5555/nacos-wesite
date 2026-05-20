@@ -420,12 +420,17 @@ export const ExcosManagement:React.FC<Props> = ({activeExco}) => {
 
     if (searchTerm.trim()) {
       const lowerSearch = searchTerm.toLowerCase();
-      result = result.filter(exco => 
+      result = result.filter(exco =>
         exco.name.toLowerCase().includes(lowerSearch) ||
         exco.email.toLowerCase().includes(lowerSearch) ||
         (exco.position && exco.position.toLowerCase().includes(lowerSearch)) ||
         exco.department.toLowerCase().includes(lowerSearch)
       );
+    }
+
+    // Filter to show only the signed-in exco
+    if (activeExco?.id) {
+      result = result.filter(exco => exco.id === activeExco.id);
     }
 
     if (filterRole === 'student') {
