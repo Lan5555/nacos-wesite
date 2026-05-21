@@ -19,7 +19,7 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
         {items.map((_, i) => (
           <div
             key={i}
-            className="bg-white border border-[#d8eedd] rounded-3xl p-6 flex items-center justify-between animate-pulse shadow-sm h-[110px]"
+            className="bg-white border border-[#d8eedd] rounded-3xl p-6 flex items-center justify-between animate-pulse shadow-sm h-27.5"
           >
             <div className="space-y-3 flex-1">
               <div className="h-3 bg-gray-200 rounded w-1/3"></div>
@@ -54,7 +54,7 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
 
   if (type === "chart") {
     return (
-      <div className="bg-white border border-[#d8eedd] rounded-3xl p-6 animate-pulse w-full h-[320px] flex flex-col justify-between">
+      <div className="bg-white border border-[#d8eedd] rounded-3xl p-6 animate-pulse w-full h-80 flex flex-col justify-between">
         <div className="h-5 bg-gray-200 rounded w-1/3 mb-6"></div>
         <div className="flex items-end justify-around h-full gap-4">
           <div className="w-8 bg-gray-200 rounded-t h-[40%]"></div>
@@ -72,7 +72,7 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
       {items.map((_, i) => (
         <div
           key={i}
-          className="bg-white border border-[#d8eedd] rounded-3xl p-6 space-y-4 animate-pulse shadow-sm h-[180px] flex flex-col justify-between"
+          className="bg-white border border-[#d8eedd] rounded-3xl p-6 space-y-4 animate-pulse shadow-sm h-45 flex flex-col justify-between"
         >
           <div className="space-y-3">
             <div className="flex justify-between items-center">
