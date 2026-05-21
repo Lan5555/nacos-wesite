@@ -1,664 +1,448 @@
 "use client";
 
-import {
-  Bell,
-  BookOpen,
-  CalendarDays,
-  CheckCircle2,
-  ChevronRight,
-  Download,
-  FileText,
-  GraduationCap,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  Search,
-  ShoppingBag,
-  Star,
-  TrendingUp,
-  X,
-  Zap,
-} from "lucide-react";
-import { useRouter } from "next/navigation";
-import type { ElementType } from "react";
-import { useEffect, useMemo, useState } from "react";
-import styles from "./student-portal.module.css";
+import React, { useEffect, useState } from "react";
+import { Star, CheckCircle, Download, Zap, MapPin, Clock, MonitorPlay, TrendingUp, GraduationCap, BookOpen, ShoppingBag, FileText, Bell } from "lucide-react";
+import { motion, Variants } from "framer-motion";
+import { useStudent } from "./layout";
+import MyCourses from "./courses/courses";
+import AcademicResults from "./results/results";
+import MerchResources from "./purchases/purchases";
+import PdfLibrary from "./pdf-library/pdf-library";
+import NotificationsPage from "./notifications/notifications";
+import Validator from "@/app/validators/auth-validator";
+import { useToast } from "@/app/providers/toast-provider";
 
-type Section =
-  | "dashboard"
-  | "pdfs"
-  | "courses"
-  | "results"
-  | "purchases"
-  | "notifications";
+// ============================================================================
+// API INTEGRATION AND INTERFACES (COMMENTED OUT UNTIL BACKEND IS READY)
+// ============================================================================
+// import CoreService from "@/app/hooks/core-service";
+//
+// interface Lecture {
+//   time: string;
+//   title: string;
+//   location: string;
+// }
+//
+// interface AcademicProgress {
+//   subject: string;
+//   percentage: number;
+// }
+//
+// interface DashboardData {
+//   gpa: number;
+//   gpaDelta: string;
+//   downloadsCount: number;
+//   lectures: Lecture[];
+//   progress: AcademicProgress[];
+// }
+// ============================================================================
 
-type StudentSession = {
-  matricNumber?: string;
-  name?: string;
-  level?: string;
-  department?: string;
-};
-
-const sections: Array<{
-  id: Section;
-  label: string;
-  icon: ElementType;
-  badge?: number;
-}> = [
-  { id: "dashboard", label: "Overview", icon: LayoutDashboard },
-  { id: "pdfs", label: "PDF Library", icon: FileText },
-  { id: "courses", label: "My Courses", icon: BookOpen },
-  { id: "results", label: "Results", icon: GraduationCap },
-  { id: "purchases", label: "Purchases", icon: ShoppingBag },
-  { id: "notifications", label: "Notifications", icon: Bell, badge: 3 },
-];
-
-const pdfLibrary = [
-  { name: "Final Year Project Guide", size: "5.2 MB", level: "400 Level" },
-  { name: "Research Methodology", size: "3.1 MB", level: "400 Level" },
-  { name: "Career Launchpad", size: "2.4 MB", level: "All Levels" },
-  { name: "Database Systems", size: "2.7 MB", level: "300 Level" },
-];
-
-const courses = [
-  {
-    code: "CSC 401",
-    title: "Advanced Software Engineering",
-    credits: 3,
-    progress: 86,
-  },
-  {
-    code: "CSC 405",
-    title: "Machine Learning Fundamentals",
-    credits: 3,
-    progress: 78,
-  },
-  { code: "CSC 411", title: "Cloud Computing", credits: 2, progress: 64 },
-  { code: "ENT 402", title: "Entrepreneurship", credits: 2, progress: 72 },
-  { code: "CSC 498", title: "Project Seminar", credits: 3, progress: 70 },
-];
-
-const results = [
-  {
-    code: "CSC 401",
-    course: "Advanced Software Engineering",
-    grade: "A",
-    score: 82,
-  },
-  { code: "CSC 405", course: "Machine Learning", grade: "B+", score: 78 },
-  { code: "CSC 411", course: "Cloud Computing", grade: "A-", score: 80 },
-  { code: "ENT 402", course: "Entrepreneurship", grade: "B", score: 74 },
-];
-
-const purchases = [
-  { name: "Nacos Eco Notebook", price: "₦7,500", tag: "Stationery" },
-  { name: "Green & White Hoodie", price: "₦28,000", tag: "Apparel" },
-  { name: "Past Question Vault", price: "₦12,000", tag: "All Levels" },
-  { name: "Final Year Project Template", price: "₦6,500", tag: "Template" },
-];
-
-const notifications = [
-  "New PDFs for 400 Level uploaded - special project guide added.",
-  "Registration for final semester courses closes Sept 25.",
-  "20% discount on NACOS merch this week only.",
-  "Your result for CSC 411 has been released.",
-];
-
-const lectures = [
-  {
-    time: "10:30 AM",
-    name: "Advanced Software Engineering",
-    location: "Room 204, ICT Block",
-  },
-  {
-    time: "12:00 PM",
-    name: "Cloud Computing",
-    location: "Lab 2, Faculty Building",
-  },
-  { time: "2:00 PM", name: "Research Seminar", location: "Online - Zoom" },
-];
-
-export default function StudentPortalPage() {
-  const router = useRouter();
-  const [activeSection, setActiveSection] = useState<Section>("dashboard");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [student, setStudent] = useState<StudentSession>({
-    matricNumber: "NAC/CS/1234",
-    name: "Chiamaka M.",
-    level: "400 Level",
-    department: "Computer Science",
+// Custom StudentHeader component matching NacosHub aesthetic
+const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title, unreadCount }) => {
+  const [currentDate] = useState(() => {
+    const d = new Date();
+    return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   });
 
-  useEffect(() => {
-    const storedSession = window.localStorage.getItem("nacos_student_session");
-
-    if (storedSession) {
-      try {
-        const parsed = JSON.parse(storedSession) as StudentSession;
-        setStudent((current) => ({ ...current, ...parsed }));
-      } catch {
-        window.localStorage.removeItem("nacos_student_session");
-      }
-    }
-  }, []);
-
-  const dateLabel = useMemo(
-    () =>
-      new Intl.DateTimeFormat("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }).format(new Date()),
-    [],
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 className="font-serif text-2xl md:text-3xl text-[#071a0d] tracking-tight">{title}</h1>
+        <p className="text-sm text-[#6a9975] mt-1 flex items-center gap-2">
+          <i className="fas fa-calendar-alt text-xs"></i>
+          <span>{currentDate}</span>
+          <span className="w-1 h-1 rounded-full bg-[#22b864]"></span>
+          <span>Active session</span>
+        </p>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="relative">
+          <div className="w-10 h-10 rounded-xl bg-white border border-[rgba(15,110,63,0.12)] flex items-center justify-center text-[#1e3d27] cursor-pointer hover:bg-[#e6faf0] transition-all shadow-sm">
+            <i className="fas fa-bell text-sm"></i>
+          </div>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#22b864] text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3 bg-white border border-[rgba(15,110,63,0.12)] rounded-xl px-4 py-2 shadow-sm">
+          <i className="fas fa-search text-[#6a9975] text-sm"></i>
+          <input 
+            type="text" 
+            placeholder="Search dashboard..." 
+            className="bg-transparent border-none outline-none text-sm font-sans text-[#071a0d] placeholder:text-[#6a9975] w-36 sm:w-48"
+          />
+        </div>
+      </div>
+    </div>
   );
+};
 
-  const pageTitle = {
-    dashboard: `Good morning, ${student.name?.split(" ")[0] ?? "Student"}`,
-    pdfs: "PDF Library",
-    courses: "My Courses",
-    results: "Academic Results",
-    purchases: "Merch & Resources",
-    notifications: "Notifications",
-  }[activeSection];
+const DashboardView: React.FC = () => {
+  const { creditsEarned = 24, activeCoursesCount = 5, unreadCount = 3, profile = { name: "Chiamaka M." } } = useStudent();
+  const [loading, setLoading] = useState(false);
 
-  const initials = (student.name ?? "Nacos Student")
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  // Default hardcoded states matching design.
+  // DELETE / COMMENT these variables out once API fetching is enabled.
+  const [gpa] = useState(3.82);
+  const [gpaDelta] = useState("+0.04 this semester");
+  const [downloadsCount] = useState(18);
 
-  const signOut = () => {
-    window.localStorage.removeItem("nacos_student_session");
-    router.push("/pages/login");
+  const [lectures] = useState([
+    { time: "10:30 AM", title: "Advanced Software Engineering", location: "Room 204, Engineering Block" },
+    { time: "12:00 PM", title: "Machine Learning Lab", location: "CS Lab, Block C" },
+    { time: "2:00 PM", title: "Research Seminar", location: "Online – Zoom" },
+  ]);
+
+  const [academicProgress] = useState([
+    { subject: "Research Project", percentage: 70 },
+    { subject: "Advanced Database", percentage: 85 },
+    { subject: "Machine Learning", percentage: 78 },
+  ]);
+
+  // ============================================================================
+  // COMMENTED API CALL EXAMPLE: UNCOMMENT THIS BLOCK TO INTEGRATE YOUR BACKEND
+  // ============================================================================
+  // const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  //
+  // useEffect(() => {
+  //   const fetchDashboardData = async () => {
+  //     setLoading(true);
+  //     const service = new CoreService();
+  //     try {
+  //       // Example endpoint: GET content/v1/student-dashboard
+  //       const response = await service.get("content/v1/student-dashboard");
+  //       if (response.success && response.data) {
+  //         // setDashboardData(response.data);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to load dashboard from API:", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchDashboardData();
+  // }, []);
+  // ============================================================================
+
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.08 }
+    }
+  };
+
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } }
+  };
+
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  };
+
+  const firstName = profile.name?.split(' ')[0] || "Student";
+
+  return (
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="flex flex-col gap-6 md:gap-8 flex-1 pb-10 max-w-7xl mx-auto w-full"
+    >
+      {/* Header Panel */}
+      <StudentHeader title={`${getGreeting()}, ${firstName} 👋`} unreadCount={unreadCount} />
+
+      {/* Metrics Row (4 premium cards) - NacosHub style */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 w-full">
+        {/* Metric 1: GPA */}
+        <motion.div variants={itemVariants} className="bg-white border border-[#d8eedd] rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all hover:-translate-y-1 group">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a9975] mb-2">
+              Current GPA
+            </span>
+            <span className="text-3xl font-bold text-[#071a0d] font-serif leading-none">
+              {gpa.toFixed(2)}
+            </span>
+            <span className="text-[11px] font-semibold text-[#22b864] flex items-center gap-1 mt-2">
+              <TrendingUp className="w-3 h-3" />
+              <span>{gpaDelta}</span>
+            </span>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0a4a20] to-[#0f6e3f] flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
+            <Star className="w-5 h-5 fill-[#88e8b0] text-[#88e8b0]" />
+          </div>
+        </motion.div>
+
+        {/* Metric 2: Credits Earned */}
+        <motion.div variants={itemVariants} className="bg-white border border-[#d8eedd] rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all hover:-translate-y-1 group">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a9975] mb-2">
+              Credits Earned
+            </span>
+            <span className="text-3xl font-bold text-[#071a0d] font-serif leading-none">
+              {creditsEarned}
+            </span>
+            <span className="text-[11px] font-semibold text-[#6a9975] mt-2">
+              of 30 this year
+            </span>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-[#e6faf0] border border-[#c0f4d5] flex items-center justify-center text-[#0f6e3f] group-hover:scale-105 transition-transform">
+            <CheckCircle className="w-5 h-5" />
+          </div>
+        </motion.div>
+
+        {/* Metric 3: PDF Downloads */}
+        <motion.div variants={itemVariants} className="bg-white border border-[#d8eedd] rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all hover:-translate-y-1 group">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a9975] mb-2">
+              PDF Downloads
+            </span>
+            <span className="text-3xl font-bold text-[#071a0d] font-serif leading-none">
+              {downloadsCount}
+            </span>
+            <span className="text-[11px] font-semibold text-[#6a9975] mt-2">
+              From PDF library
+            </span>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-[#e6faf0] border border-[#c0f4d5] flex items-center justify-center text-[#0f6e3f] group-hover:scale-105 transition-transform">
+            <Download className="w-5 h-5" />
+          </div>
+        </motion.div>
+
+        {/* Metric 4: Courses Active */}
+        <motion.div variants={itemVariants} className="bg-white border border-[#d8eedd] rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all hover:-translate-y-1 group">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a9975] mb-2">
+              Courses Active
+            </span>
+            <span className="text-3xl font-bold text-[#071a0d] font-serif leading-none">
+              {activeCoursesCount}
+            </span>
+            <span className="text-[11px] font-semibold text-[#6a9975] mt-2">
+              Harmattan 2026
+            </span>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-[#e6faf0] border border-[#c0f4d5] flex items-center justify-center text-[#0f6e3f] group-hover:scale-105 transition-transform">
+            <Zap className="w-5 h-5" />
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Main Grid: Lectures & Progress */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-start w-full">
+        {/* Left Column: Today's Lectures */}
+        <div className="lg:col-span-2 bg-white border border-[#d8eedd] rounded-3xl shadow-sm overflow-hidden h-full flex flex-col">
+          <div className="flex items-center justify-between border-b border-[#d8eedd] p-5 md:px-6">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#e6faf0] flex items-center justify-center text-[#0f6e3f]">
+                <MonitorPlay className="w-4 h-4" />
+              </div>
+              <h3 className="text-lg font-bold text-[#071a0d] font-serif">
+                Today's Lectures
+              </h3>
+            </div>
+            <span className="text-xs font-semibold text-[#6a9975]">
+              {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+            </span>
+          </div>
+
+          <div className="p-5 md:p-6 space-y-4 flex-1">
+            {lectures.map((lecture, index) => (
+              <div
+                key={index}
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-[#f2fbf6]/50 border border-[#d8eedd] rounded-xl hover:bg-[#e6faf0] hover:border-[#88e8b0] transition-all gap-3"
+                style={{ animationDelay: `${index * 0.1}s`, animation: 'fadeUp 0.4s ease both' }}
+              >
+                <div className="flex items-start gap-4">
+                  {/* Left Accent Bar */}
+                  <div className="w-1 h-10 bg-[#22b864] rounded-full self-center"></div>
+                  
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-[#22b864] flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      {lecture.time}
+                    </span>
+                    <h4 className="text-sm md:text-base font-bold text-[#071a0d] font-sans mt-0.5">
+                      {lecture.title}
+                    </h4>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 text-[11px] font-semibold text-[#3a6645] bg-white border border-[#d8eedd] px-3 py-1.5 rounded-full self-start sm:self-auto shadow-sm">
+                  <MapPin className="w-3 h-3 text-[#22b864]" />
+                  <span>{lecture.location}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right Column: Academic Progress */}
+        <div className="bg-white border border-[#d8eedd] rounded-3xl shadow-sm p-5 md:p-6 flex flex-col">
+          <div className="flex items-center gap-2.5 border-b border-[#d8eedd] pb-4 mb-5">
+            <div className="w-8 h-8 rounded-lg bg-[#e6faf0] flex items-center justify-center text-[#0f6e3f]">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <h3 className="text-lg font-bold text-[#071a0d] font-serif">
+              Academic Progress
+            </h3>
+          </div>
+
+          {/* GPA Ring Gauge */}
+          <div className="flex items-center gap-6 mb-8 justify-center sm:justify-start">
+            <div className="relative w-24 h-24 flex items-center justify-center">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="40"
+                  stroke="#e6faf0"
+                  strokeWidth="8"
+                  fill="transparent"
+                />
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="40"
+                  stroke="#22b864"
+                  strokeWidth="8"
+                  fill="transparent"
+                  strokeDasharray="251.2"
+                  strokeDashoffset={251.2 - (251.2 * gpa) / 4.0}
+                  strokeLinecap="round"
+                  style={{ transition: "stroke-dashoffset 1s ease" }}
+                />
+              </svg>
+              <div className="absolute flex flex-col items-center">
+                <span className="text-xl font-extrabold text-[#071a0d] font-serif leading-none">
+                  {gpa.toFixed(2)}
+                </span>
+                <span className="text-[9px] font-bold text-[#6a9975] mt-0.5">
+                  / 4.0
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#6a9975] mb-0.5">
+                Standing
+              </span>
+              <span className="text-base font-extrabold text-[#22b864] tracking-wide">
+                First Class
+              </span>
+              <div className="flex items-center gap-1.5 mt-2 bg-[#f2fbf6] border border-[#d8eedd] px-2.5 py-1 rounded-lg">
+                <span className="text-[9px] font-bold text-[#6a9975] uppercase">Level</span>
+                <span className="text-[11px] font-bold text-[#071a0d]">400</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Bars */}
+          <div className="space-y-4">
+            {academicProgress.map((item, index) => (
+              <div key={index} className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-xs font-semibold">
+                  <span className="text-[#3a6645] font-bold">{item.subject}</span>
+                  <span className="text-[#071a0d] font-black">{item.percentage}%</span>
+                </div>
+                <div className="w-full h-2 bg-[#e6faf0] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-linear-to-r from-[#22b864] to-[#4fd68a] rounded-full transition-all duration-700"
+                    style={{ width: `${item.percentage}%` }}
+                  ></div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Quick Stats Footer */}
+          <div className="mt-6 pt-4 border-t border-[#d8eedd]">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-[#6a9975]">Semester Progress</span>
+              <span className="font-bold text-[#22b864]">76%</span>
+            </div>
+            <div className="mt-2 h-1.5 bg-[#e6faf0] rounded-full overflow-hidden">
+              <div className="h-full w-[76%] bg-linear-to-r from-[#0f6e3f] to-[#22b864] rounded-full"></div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Quick Links Section - NacosHub style */}
+      <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white border border-[#d8eedd] rounded-2xl p-4 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer group">
+          <div className="w-10 h-10 rounded-xl bg-[#e6faf0] flex items-center justify-center mx-auto mb-2 text-[#0f6e3f] group-hover:scale-110 transition-transform">
+            <BookOpen className="w-4 h-4" />
+          </div>
+          <span className="text-xs font-bold text-[#071a0d]">Browse Courses</span>
+        </div>
+        <div className="bg-white border border-[#d8eedd] rounded-2xl p-4 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer group">
+          <div className="w-10 h-10 rounded-xl bg-[#e6faf0] flex items-center justify-center mx-auto mb-2 text-[#0f6e3f] group-hover:scale-110 transition-transform">
+            <GraduationCap className="w-4 h-4" />
+          </div>
+          <span className="text-xs font-bold text-[#071a0d]">View Results</span>
+        </div>
+        <div className="bg-white border border-[#d8eedd] rounded-2xl p-4 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer group">
+          <div className="w-10 h-10 rounded-xl bg-[#e6faf0] flex items-center justify-center mx-auto mb-2 text-[#0f6e3f] group-hover:scale-110 transition-transform">
+            <ShoppingBag className="w-4 h-4" />
+          </div>
+          <span className="text-xs font-bold text-[#071a0d]">Merch Store</span>
+        </div>
+        <div className="bg-white border border-[#d8eedd] rounded-2xl p-4 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer group">
+          <div className="w-10 h-10 rounded-xl bg-[#e6faf0] flex items-center justify-center mx-auto mb-2 text-[#0f6e3f] group-hover:scale-110 transition-transform">
+            <FileText className="w-4 h-4" />
+          </div>
+          <span className="text-xs font-bold text-[#071a0d]">PDF Library</span>
+        </div>
+      </motion.div>
+
+      <style jsx>{`
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(12px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+    </motion.div>
+  );
+};
+
+const StudentDashboard: React.FC = () => {
+  const { activeSection = "dashboard" } = useStudent();
+
+  const renderView = () => {
+    const sections = ["dashboard", "courses", "results", "purchases", "pdf-library", "notifications"];
+    const screens = [
+      <DashboardView />,
+      <MyCourses />,
+      <AcademicResults />,
+      <MerchResources />,
+      <PdfLibrary />,
+      <NotificationsPage />,
+    ]
+    
+    const activeIndex = sections.indexOf(activeSection);
+    return activeIndex !== -1 ? screens[activeIndex] : <DashboardView />;
   };
 
   return (
-    <div className={styles.portalShell}>
-      <button
-        type="button"
-        className={styles.menuToggle}
-        onClick={() => setMenuOpen(true)}
-        aria-label="Open menu"
-      >
-        <Menu size={20} />
-      </button>
-
-      <aside
-        className={`${styles.sidebar} ${menuOpen ? styles.sidebarOpen : ""}`}
-      >
-        <div className={styles.sidebarGlow} />
-        <button
-          type="button"
-          className={styles.closeMenu}
-          onClick={() => setMenuOpen(false)}
-          aria-label="Close menu"
-        >
-          <X size={18} />
-        </button>
-
-        <div className={styles.sidebarLogo}>
-          <div className={styles.logoBadge}>
-            <div className={styles.logoIcon}>N</div>
-            <span className={styles.logoText}>NacosHub</span>
-          </div>
-          <div className={styles.logoSub}>Student Portal</div>
-        </div>
-
-        <nav className={styles.sidebarNav}>
-          <p className={styles.navLabel}>Main</p>
-          {sections.slice(0, 3).map((item) => (
-            <PortalNavButton
-              key={item.id}
-              item={item}
-              active={activeSection === item.id}
-              onClick={() => {
-                setActiveSection(item.id);
-                setMenuOpen(false);
-              }}
-            />
-          ))}
-
-          <p className={styles.navLabel}>Activity</p>
-          {sections.slice(3).map((item) => (
-            <PortalNavButton
-              key={item.id}
-              item={item}
-              active={activeSection === item.id}
-              onClick={() => {
-                setActiveSection(item.id);
-                setMenuOpen(false);
-              }}
-            />
-          ))}
-        </nav>
-
-        <div className={styles.sidebarProfile}>
-          <div className={styles.profileRow}>
-            <div className={styles.profileAvatar}>{initials}</div>
-            <div>
-              <div className={styles.profileName}>{student.name}</div>
-              <div className={styles.profileMeta}>
-                {student.level} · CS · {student.matricNumber}
-              </div>
-            </div>
-          </div>
-          <button
-            type="button"
-            className={styles.signOutButton}
-            onClick={signOut}
-          >
-            <LogOut size={15} />
-            Sign out
-          </button>
-        </div>
-      </aside>
-
-      <main className={styles.main}>
-        <header className={styles.topbar}>
-          <div>
-            <h1>{pageTitle}</h1>
-            <p>
-              <CalendarDays size={14} /> {dateLabel} ·{" "}
-              <span className={styles.activeDot} /> Active session
-            </p>
-          </div>
-          <div className={styles.topbarRight}>
-            <label className={styles.searchBar}>
-              <Search size={15} />
-              <input placeholder="Search courses, PDFs..." />
-            </label>
-            <button
-              type="button"
-              className={styles.notifButton}
-              onClick={() => setActiveSection("notifications")}
-              aria-label="Notifications"
-            >
-              <Bell size={18} />
-              <span />
-            </button>
-          </div>
-        </header>
-
-        {activeSection === "dashboard" && <DashboardSection />}
-        {activeSection === "pdfs" && <PdfSection />}
-        {activeSection === "courses" && <CoursesSection />}
-        {activeSection === "results" && <ResultsSection />}
-        {activeSection === "purchases" && <PurchasesSection />}
-        {activeSection === "notifications" && <NotificationsSection />}
-      </main>
-    </div>
+    <>
+      {renderView()}
+      <Validator />
+    </>
   );
-}
+};
 
-function PortalNavButton({
-  item,
-  active,
-  onClick,
-}: {
-  item: { id: Section; label: string; icon: ElementType; badge?: number };
-  active: boolean;
-  onClick: () => void;
-}) {
-  const Icon = item.icon;
-
-  return (
-    <button
-      type="button"
-      className={`${styles.navItem} ${active ? styles.navItemActive : ""}`}
-      onClick={onClick}
-    >
-      <span className={styles.navIcon}>
-        <Icon size={17} />
-      </span>
-      {item.label}
-      {item.badge ? (
-        <span className={styles.navBadge}>{item.badge}</span>
-      ) : null}
-    </button>
-  );
-}
-
-function DashboardSection() {
-  return (
-    <section className={styles.section}>
-      <div className={styles.statsGrid}>
-        <StatCard
-          icon={Star}
-          label="Current GPA"
-          value="3.82"
-          sub="+0.04 this semester"
-          tone="dark"
-        />
-        <StatCard
-          icon={CheckCircle2}
-          label="Credits Earned"
-          value="24"
-          sub="of 30 this year"
-          tone="green"
-        />
-        <StatCard
-          icon={Download}
-          label="PDF Downloads"
-          value="18"
-          sub="From PDF library"
-          tone="mint"
-        />
-        <StatCard
-          icon={Zap}
-          label="Courses Active"
-          value="5"
-          sub="Harmattan 2026"
-          tone="gold"
-        />
-      </div>
-
-      <div className={styles.twoCol}>
-        <article className={styles.card}>
-          <CardHeader
-            icon={CalendarDays}
-            title="Today's Lectures"
-            meta="Today"
-          />
-          <div className={styles.lectureGrid}>
-            {lectures.map((lecture) => (
-              <div className={styles.lectureCard} key={lecture.name}>
-                <span>{lecture.time}</span>
-                <strong>{lecture.name}</strong>
-                <p>{lecture.location}</p>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className={styles.card}>
-          <CardHeader icon={TrendingUp} title="Academic Progress" />
-          <div className={styles.progressPanel}>
-            <div className={styles.gpaRing}>
-              <svg
-                width="96"
-                height="96"
-                viewBox="0 0 96 96"
-                aria-hidden="true"
-              >
-                <circle
-                  cx="48"
-                  cy="48"
-                  r="40"
-                  fill="none"
-                  stroke="#e6faf0"
-                  strokeWidth="8"
-                />
-                <circle
-                  cx="48"
-                  cy="48"
-                  r="40"
-                  fill="none"
-                  stroke="#22b864"
-                  strokeWidth="8"
-                  strokeDasharray="251.2"
-                  strokeDashoffset="60"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div>
-                <strong>3.82</strong>
-                <span>/ 4.0</span>
-              </div>
-            </div>
-            <div className={styles.gpaDetails}>
-              <div>
-                <span>Standing</span>
-                <strong>First Class</strong>
-              </div>
-              <div>
-                <span>Level</span>
-                <strong>400</strong>
-              </div>
-              {courses.slice(0, 2).map((course) => (
-                <ProgressRow
-                  key={course.code}
-                  label={course.title}
-                  value={course.progress}
-                />
-              ))}
-            </div>
-          </div>
-        </article>
-      </div>
-    </section>
-  );
-}
-
-function PdfSection() {
-  return (
-    <section className={styles.section}>
-      <article className={styles.card}>
-        <CardHeader
-          icon={FileText}
-          title="PDF Library"
-          meta="400 Level selected"
-        />
-        <div className={styles.itemGrid}>
-          {pdfLibrary.map((pdf) => (
-            <div className={styles.itemTile} key={pdf.name}>
-              <div className={styles.tileTop}>
-                <div className={styles.tileIcon}>
-                  <FileText size={21} />
-                </div>
-                <span>{pdf.size}</span>
-              </div>
-              <strong>{pdf.name}</strong>
-              <p>{pdf.level} Resource</p>
-              <div className={styles.tileFooter}>
-                <button type="button" className={styles.ghostButton}>
-                  Preview
-                </button>
-                <button type="button" className={styles.primaryButton}>
-                  <Download size={15} />
-                  Download
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </article>
-    </section>
-  );
-}
-
-function CoursesSection() {
-  return (
-    <section className={styles.section}>
-      <article className={styles.card}>
-        <CardHeader
-          icon={BookOpen}
-          title="Available Courses"
-          meta="Harmattan Semester 2026"
-        />
-        <div className={styles.itemGrid}>
-          {courses.map((course) => (
-            <div className={styles.itemTile} key={course.code}>
-              <div className={styles.tileTop}>
-                <div className={styles.tileIcon}>
-                  <BookOpen size={21} />
-                </div>
-                <span>{course.credits} cr.</span>
-              </div>
-              <code>{course.code}</code>
-              <strong>{course.title}</strong>
-              <p>1st Semester · {course.credits} Credit Hours</p>
-              <ProgressRow label="Course progress" value={course.progress} />
-            </div>
-          ))}
-        </div>
-      </article>
-    </section>
-  );
-}
-
-function ResultsSection() {
-  return (
-    <section className={styles.section}>
-      <div className={styles.twoCol}>
-        <article className={styles.card}>
-          <CardHeader
-            icon={GraduationCap}
-            title="Academic Results"
-            meta="Live-ready data"
-          />
-          <div className={styles.resultList}>
-            {results.map((result) => (
-              <div className={styles.resultRow} key={result.code}>
-                <div>
-                  <strong>{result.course}</strong>
-                  <span>{result.code}</span>
-                </div>
-                <div className={styles.gradeChip}>
-                  <div className={styles.scoreTrack}>
-                    <span style={{ width: `${result.score}%` }} />
-                  </div>
-                  <b>{result.grade}</b>
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
-        <article className={styles.card}>
-          <CardHeader icon={TrendingUp} title="Score Overview" />
-          <div className={styles.scoreList}>
-            {results.map((result) => (
-              <ProgressRow
-                key={result.code}
-                label={result.code}
-                value={result.score}
-              />
-            ))}
-          </div>
-        </article>
-      </div>
-    </section>
-  );
-}
-
-function PurchasesSection() {
-  return (
-    <section className={styles.section}>
-      <article className={styles.card}>
-        <CardHeader icon={ShoppingBag} title="Merch & Resources" />
-        <div className={styles.itemGrid}>
-          {purchases.map((item) => (
-            <div className={styles.itemTile} key={item.name}>
-              <div className={styles.tileTop}>
-                <div className={styles.tileIcon}>
-                  <ShoppingBag size={21} />
-                </div>
-                <span>{item.tag}</span>
-              </div>
-              <strong>{item.name}</strong>
-              <p className={styles.price}>{item.price}</p>
-              <button type="button" className={styles.primaryButton}>
-                Add to Cart
-                <ChevronRight size={15} />
-              </button>
-            </div>
-          ))}
-        </div>
-      </article>
-    </section>
-  );
-}
-
-function NotificationsSection() {
-  return (
-    <section className={styles.section}>
-      <article className={styles.card}>
-        <CardHeader icon={Bell} title="Notifications" meta="3 unread" />
-        <div className={styles.notificationList}>
-          {notifications.map((item, index) => (
-            <div
-              className={`${styles.notificationRow} ${index === 3 ? styles.readNotification : ""}`}
-              key={item}
-            >
-              <span>
-                <Bell size={16} />
-              </span>
-              <div>
-                <strong>{item}</strong>
-                <p>
-                  {index === 0
-                    ? "2 hours ago"
-                    : index === 1
-                      ? "Yesterday"
-                      : `${index + 1} days ago`}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </article>
-    </section>
-  );
-}
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  tone,
-}: {
-  icon: ElementType;
-  label: string;
-  value: string;
-  sub: string;
-  tone: "dark" | "green" | "mint" | "gold";
-}) {
-  return (
-    <article className={styles.statCard}>
-      <div className={`${styles.statIcon} ${styles[tone]}`}>
-        <Icon size={22} />
-      </div>
-      <div>
-        <span>{label}</span>
-        <strong>{value}</strong>
-        <p>{sub}</p>
-      </div>
-    </article>
-  );
-}
-
-function CardHeader({
-  icon: Icon,
-  title,
-  meta,
-}: {
-  icon: ElementType;
-  title: string;
-  meta?: string;
-}) {
-  return (
-    <header className={styles.cardHeader}>
-      <h2>
-        <span>
-          <Icon size={17} />
-        </span>
-        {title}
-      </h2>
-      {meta ? <p>{meta}</p> : null}
-    </header>
-  );
-}
-
-function ProgressRow({ label, value }: { label: string; value: number }) {
-  return (
-    <div className={styles.progressRow}>
-      <span>{label}</span>
-      <div>
-        <i style={{ width: `${value}%` }} />
-      </div>
-      <b>{value}%</b>
-    </div>
-  );
-}
+export default StudentDashboard;

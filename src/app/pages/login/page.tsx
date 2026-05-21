@@ -220,11 +220,11 @@ const NacosLogin: React.FC = () => {
                   onChange={(e) => setLoginId(e.target.value)}
                   className="w-full px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all"
                 required/>
-                <span
+                <div
                     className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-[#6a8a6a] text-sm select-none"
                   >
-                    {matLoading ? <Loader className='animate-pulse'/> : ''}
-                  </span>
+                    {matLoading ? <Loader className='animate-spin w-4 h-4'/> : ''}
+                  </div>
               </div>
               </div>
 
@@ -253,8 +253,11 @@ const NacosLogin: React.FC = () => {
                 <a href="/pages/login/reset-password" className="text-[0.8rem] font-semibold text-[#1e7a1e] no-underline hover:underline">Forgot password?</a>
               </div>
 
-              <button type="submit" className="w-full py-3 rounded-xl bg-[#1e7a1e] text-white text-[0.95rem] font-bold border-none cursor-pointer hover:bg-[#165716] transition-all hover:-translate-y-px hover:shadow-lg hover:shadow-[#1e7a1e]/25 mt-2 flex justify-center items-center">
-                {loading ? <Loader className='animate-spin'></Loader> : 'Sign In to Dashboard →'}
+              <button 
+                type="submit" 
+                disabled={loading || matLoading}
+                className="w-full py-3 rounded-xl bg-[#1e7a1e] text-white text-[0.95rem] font-bold border-none cursor-pointer hover:bg-[#165716] transition-all hover:-translate-y-px hover:shadow-lg hover:shadow-[#1e7a1e]/25 mt-2 flex justify-center items-center disabled:bg-[#6a8a6a] disabled:cursor-wait disabled:hover:translate-y-0">
+                {loading ? <Loader className='animate-spin' /> : 'Sign In to Dashboard →'}
               </button>
 
               <div className="flex items-center gap-3 my-6 text-[#b0c4b0] text-[0.8rem]">
@@ -263,9 +266,12 @@ const NacosLogin: React.FC = () => {
                 <div className="flex-1 h-px bg-[#e2efe2]" />
               </div>
 
-              <button type="button" className="w-full py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.88rem] font-semibold flex items-center justify-center gap-2.5 text-[#0e2a0e] hover:bg-[#edfaed] hover:border-[#72d872] transition-all cursor-pointer" onClick={() => {
-                router.push('/pages/login/admin-auth');
-              }}>
+              <button 
+                type="button" 
+                disabled={matLoading}
+                className="w-full py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.88rem] font-semibold flex items-center justify-center gap-2.5 text-[#0e2a0e] hover:bg-[#edfaed] hover:border-[#72d872] transition-all cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed" 
+                onClick={() => router.push('/pages/login/admin-auth')}
+              >
                 Admin Authentication
               </button>
 

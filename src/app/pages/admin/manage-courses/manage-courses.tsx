@@ -7,7 +7,7 @@ import {
 import Validator from '@/app/validators/auth-validator';
 import CoreService from "@/app/hooks/core-service";
 
-interface Course {
+export interface Course {
   id: string;
   name: string;
   department: string;
@@ -38,6 +38,7 @@ const CourseManagement: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedLevel, setSelectedLevel] = useState('');
@@ -55,6 +56,23 @@ const CourseManagement: React.FC = () => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
+
+  const downloadDocument = async (course: Course) => {
+    try {
+      setDownloadingId(course.id);
+      const response = await fetch(course.downloadUrl!);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${course.code}_Resource.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch { 
+      window.open(course.downloadUrl, '_blank'); 
+    } finally { setDownloadingId(null); }
+  }
 
   // Fetch all courses
   const fetchCourses = async () => {
@@ -378,10 +396,15 @@ const CourseManagement: React.FC = () => {
                           <p className="text-xs text-emerald-500">PDF File</p>
                         </div>
                         <button
-                          onClick={() => window.open(course.downloadUrl, '_blank')}
-                          className="p-2 text-emerald-500 hover:bg-emerald-100 rounded-lg transition-colors"
+                          disabled={downloadingId === course.id}
+                          onClick={() => downloadDocument(course)}
+                          className="p-2 text-emerald-500 hover:bg-emerald-100 rounded-lg transition-colors disabled:opacity-50"
                         >
-                          <Download size={15} />
+                          {downloadingId === course.id ? (
+                            <Loader2 size={15} className="animate-spin" />
+                          ) : (
+                            <Download size={15} />
+                          )}
                         </button>
                       </div>
                     ) : (

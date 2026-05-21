@@ -39,7 +39,7 @@ const StudentHeader: React.FC<StudentHeaderProps> = ({
     <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 w-full select-none pb-6 md:pb-8">
       {/* Title & Info Section */}
       <div className="flex flex-col">
-        <h2 className="text-2xl md:text-[32px] font-extrabold text-[#0d1b0f] font-sans leading-tight">
+        <h2 className="text-2xl md:text-[32px] font-bold text-slate-900 font-serif leading-tight">
           {title}
         </h2>
         

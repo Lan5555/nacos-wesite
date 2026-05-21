@@ -46,7 +46,7 @@ const StudentProfileCard: React.FC<StudentProfileCardProps> = ({
       {/* Sign Out Button */}
       <div className="relative group ml-auto">
         <button className="p-2 rounded-xl hover:bg-white/10 text-white/50 hover:text-white transition-all duration-300">
-          <LogOut className="w-[18px] h-[18px]" />
+          <LogOut className="w-4.5 h-4.5" />
         </button>
         {/* Tooltip */}
         <div className="absolute right-0 bottom-[calc(100%+8px)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap bg-emerald-950/80 backdrop-blur-md border border-white/10 text-white/90 text-[11px] font-medium py-1.5 px-3 rounded-lg shadow-xl z-50">

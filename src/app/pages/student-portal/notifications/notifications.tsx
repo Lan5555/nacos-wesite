@@ -20,7 +20,7 @@ import { useStudent, NotificationItem } from "../layout";
 // }
 // ============================================================================
 
-export default function NotificationsPage() {
+const NotificationsPage: React.FC = () => {
   const { unreadCount, notifications, markNotificationRead, markAllNotificationsRead } = useStudent();
   const [clearing, setClearing] = useState(false);
 
@@ -195,3 +195,5 @@ export default function NotificationsPage() {
     </div>
   );
 }
+
+export default NotificationsPage;

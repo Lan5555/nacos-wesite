@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import StudentSidebar from "./components/StudentSidebar";
-import { X, CheckCircle, Info, AlertTriangle } from "lucide-react";
+import { X, CheckCircle, Info, AlertTriangle, Menu } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import Validator from "@/app/validators/auth-validator";
 
 // Types for dynamic states
@@ -39,6 +40,8 @@ interface StudentContextType {
   hideToast: () => void;
   cartCount: number;
   addToCart: (itemName: string, price: number) => void;
+  activeSection: string;
+  setActiveSection: (section: string) => void;
 }
 
 // Create context
@@ -53,11 +56,7 @@ export const useStudent = () => {
   return context;
 };
 
-export default function StudentLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+const StudentLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // 1. Student Info State
   const [profile] = useState<StudentProfile>({
     name: "Chiamaka M.",
@@ -194,6 +193,10 @@ export default function StudentLayout({
     }
   }, [toast]);
 
+  // 6. Section Navigation State (SPA Mode)
+  const [activeSection, setActiveSection] = useState("dashboard");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   return (
     <StudentContext.Provider
       value={{
@@ -212,53 +215,143 @@ export default function StudentLayout({
         hideToast,
         cartCount,
         addToCart,
+        activeSection,
+        setActiveSection,
       }}
     >
-      <div className="flex bg-[#f5f9f6] min-h-screen text-slate-800 font-sans antialiased overflow-hidden">
+      <div className="flex bg-[#fcfdfc] min-h-screen text-slate-800 font-sans antialiased overflow-hidden relative">
         {/* Enforce authentication for all student routes */}
         {/* <Validator /> */}
 
-        {/* Left Fixed Sidebar */}
-        <StudentSidebar unreadNotificationsCount={unreadCount} profile={profile} />
+        {/* Background decorations matching Login Page */}
+        <div className="fixed -top-20 -right-20 w-100 h-100 rounded-full bg-[radial-gradient(circle,rgba(60,196,60,0.08),transparent_70%)] pointer-events-none" />
+        <div className="fixed -bottom-16 -left-16 w-75 h-75 rounded-full bg-[radial-gradient(circle,rgba(40,162,40,0.05),transparent_70%)] pointer-events-none" />
+        <div className="fixed inset-0 bg-[radial-gradient(circle,rgba(30,122,30,0.02)_1px,transparent_1px)] bg-size-[32px_32px] pointer-events-none" />
+
+        {/* Sidebar implementation for Mobile & Desktop */}
+        <div className={`
+          fixed inset-y-0 left-0 z-50 transform 
+          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} 
+          lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out
+          shrink-0
+        `}>
+          <StudentSidebar 
+            unreadNotificationsCount={unreadCount} 
+            profile={profile} 
+            activeSection={activeSection}
+            onSectionChange={(section) => {
+              setActiveSection(section);
+              setIsSidebarOpen(false);
+            }}
+            onClose={() => setIsSidebarOpen(false)}
+          />
+        </div>
+
+        {/* Mobile Backdrop Overlay */}
+        <AnimatePresence>
+          {isSidebarOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSidebarOpen(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+            />
+          )}
+        </AnimatePresence>
 
         {/* Right Scrollable Area */}
-        <main className="flex-1 h-screen overflow-y-auto px-6 py-6 md:px-10 md:py-8 relative flex flex-col">
-          {/* Subtle Page Background Accents */}
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#2dba4e]/5 rounded-full filter blur-[100px] pointer-events-none select-none"></div>
-          <div className="absolute bottom-10 left-1/3 w-80 h-80 bg-emerald-500/5 rounded-full filter blur-[80px] pointer-events-none select-none"></div>
+        <main className="flex-1 h-screen overflow-y-auto relative flex flex-col z-10">
+          {/* Mobile Top Navigation Bar */}
+          <div className="lg:hidden flex items-center justify-between px-6 py-4 border-b border-emerald-100 bg-white/80 backdrop-blur-md sticky top-0 z-30">
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="p-2 -ml-2 rounded-lg hover:bg-emerald-50 text-emerald-800 transition-colors"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+              <span className="font-serif font-bold text-lg text-emerald-950">NacosHub</span>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shadow-sm">
+              {profile.initials}
+            </div>
+          </div>
 
-          {/* Child Pages Content */}
-          <div className="relative z-10 flex-1 flex flex-col">
-            {children}
+          <div className="px-6 py-6 md:px-10 md:py-8 flex-1 flex flex-col">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeSection}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className="flex-1 flex flex-col"
+              >
+                {children}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </main>
 
         {/* Global Toast Banner */}
-        {toast && (
-          <div className="fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 bg-white/90 backdrop-blur-md border border-[#d8eedd] rounded-2xl shadow-xl transition-all duration-300 transform translate-y-0 animate-bounce-short select-none max-w-sm">
-            <div className="shrink-0">
-              {toast.type === "success" && (
-                <CheckCircle className="w-5 h-5 text-[#2dba4e]" />
-              )}
-              {toast.type === "info" && (
-                <Info className="w-5 h-5 text-emerald-600" />
-              )}
-              {toast.type === "error" && (
-                <AlertTriangle className="w-5 h-5 text-red-500" />
-              )}
-            </div>
-            <p className="text-sm font-semibold text-[#0d1b0f] font-sans flex-1">
-              {toast.message}
-            </p>
-            <button
-              onClick={hideToast}
-              className="text-[#8aab92] hover:text-[#0d1b0f] p-0.5 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+        <AnimatePresence>
+          {toast && (
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+              className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4 bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white border border-white/10 rounded-2xl shadow-xl select-none max-w-sm"
             >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
+              <div className="shrink-0">
+                {toast.type === "success" && (
+                  <CheckCircle className="w-5 h-5 text-[#2dba4e]" />
+                )}
+                {toast.type === "info" && (
+                  <Info className="w-5 h-5 text-emerald-600" />
+                )}
+                {toast.type === "error" && (
+                  <AlertTriangle className="w-5 h-5 text-red-500" />
+                )}
+              </div>
+              <p className="text-sm font-semibold text-white/90 font-sans flex-1">
+                {toast.message}
+              </p>
+              <button
+                onClick={hideToast}
+                className="text-white/40 hover:text-white p-0.5 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <style jsx global>{`
+          @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&display=swap');
+          
+          .font-serif {
+            font-family: 'Crimson Pro', serif;
+          }
+
+          @keyframes slide-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .animate-slide-up {
+            animation: slide-up 0.25s ease-out forwards;
+          }
+
+          ::-webkit-scrollbar {
+            width: 5px;
+          }
+          ::-webkit-scrollbar-thumb {
+            background: #2dba4e40;
+            border-radius: 10px;
+          }
+        `}</style>
       </div>
     </StudentContext.Provider>
   );
 }
+
+export default StudentLayout;
