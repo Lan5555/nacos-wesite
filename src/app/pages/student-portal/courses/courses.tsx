@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { BookOpen, Check, Clock, GraduationCap } from "lucide-react";
+import { Bell, BookOpen, Check, Clock, GraduationCap } from "lucide-react";
 import { useStudent } from "../layout";
 
 // ============================================================================
@@ -20,7 +20,11 @@ import { useStudent } from "../layout";
 // ============================================================================
 
 // Custom StudentHeader component matching NacosHub aesthetic
-const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title, unreadCount }) => {
+const StudentHeader: React.FC<{ 
+  title: string; 
+  unreadCount: number;
+  onSearch: (query: string) => void;
+}> = ({ title, unreadCount, onSearch }) => {
   const [currentDate] = useState(() => {
     const d = new Date();
     return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -40,7 +44,7 @@ const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title
       <div className="flex items-center gap-3">
         <div className="relative">
           <div className="w-10 h-10 rounded-xl bg-white border border-[rgba(15,110,63,0.12)] flex items-center justify-center text-[#1e3d27] cursor-pointer hover:bg-[#e6faf0] transition-all shadow-sm">
-            <i className="fas fa-bell text-sm"></i>
+            <Bell className="w-4 h-4" />
           </div>
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#22b864] text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
@@ -53,6 +57,7 @@ const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title
           <input 
             type="text" 
             placeholder="Search courses..." 
+            onChange={(e) => onSearch(e.target.value)}
             className="bg-transparent border-none outline-none text-sm font-sans text-[#071a0d] placeholder:text-[#6a9975] w-36 sm:w-48"
           />
         </div>
@@ -64,6 +69,7 @@ const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title
 const MyCourses: React.FC = () => {
   const { unreadCount = 0, registeredCourses = [], registerCourse } = useStudent();
   const [loadingCourseId, setLoadingCourseId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Fallback courses state matching the screenshots.
   // DELETE / COMMENT these variables out once API fetching is enabled.
@@ -114,6 +120,13 @@ const MyCourses: React.FC = () => {
       description: "Final year project presentation and documentation",
     },
   ]);
+
+  // Filter courses based on search query
+  const filteredCourses = courses.filter(course => 
+    course.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    course.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    course.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Calculate total credits from registered courses
   const totalRegisteredCredits = courses
@@ -167,7 +180,11 @@ const MyCourses: React.FC = () => {
   return (
     <div className="flex flex-col gap-6 md:gap-8 flex-1 pb-10 max-w-7xl mx-auto w-full">
       {/* Header Panel */}
-      <StudentHeader title="My Courses" unreadCount={unreadCount} />
+      <StudentHeader 
+        title="My Courses" 
+        unreadCount={unreadCount} 
+        onSearch={setSearchQuery}
+      />
 
       {/* Stats Row - Matching NacosHub dashboard style */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -240,7 +257,7 @@ const MyCourses: React.FC = () => {
         {/* Courses grid list */}
         <div className="p-5 md:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 w-full">
-            {courses.map((course, idx) => {
+            {filteredCourses.map((course, idx) => {
               const isRegistered = registeredCourses.includes(course.code);
               const isLoading = loadingCourseId === course.id;
 
@@ -252,7 +269,7 @@ const MyCourses: React.FC = () => {
                       ? "border-[#88e8b0] bg-linear-to-br from-white to-[#e6faf0]/30"
                       : "border-[#d8eedd] hover:border-[#88e8b0]"
                   }`}
-                  style={{ animationDelay: `${idx * 0.05}s`, animation: 'fadeUp 0.4s ease both' }}
+                  style={{ animationName: 'fadeUp', animationDuration: '0.4s', animationTimingFunction: 'ease', animationFillMode: 'both', animationDelay: `${idx * 0.05}s` }}
                 >
                   {/* Decorative background element */}
                   <div className="absolute -right-6 -top-6 w-24 h-24 bg-[#22b864]/5 rounded-full blur-xl group-hover:bg-[#22b864]/10 transition-colors"></div>
@@ -331,6 +348,17 @@ const MyCourses: React.FC = () => {
               );
             })}
           </div>
+
+          {/* Empty Search State */}
+          {filteredCourses.length === 0 && (
+            <div className="py-12 flex flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 rounded-full bg-[#f2fbf6] flex items-center justify-center mb-4">
+                <BookOpen className="w-6 h-6 text-[#6a9975]" />
+              </div>
+              <h4 className="text-base font-bold text-[#071a0d]">No courses found</h4>
+              <p className="text-sm text-[#6a9975] mt-1">We couldn't find any courses matching "{searchQuery}"</p>
+            </div>
+          )}
         </div>
 
         {/* Footer note - registration summary */}

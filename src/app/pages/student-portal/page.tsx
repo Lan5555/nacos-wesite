@@ -11,6 +11,9 @@ import PdfLibrary from "./pdf-library/pdf-library";
 import NotificationsPage from "./notifications/notifications";
 import Validator from "@/app/validators/auth-validator";
 import { useToast } from "@/app/providers/toast-provider";
+import GPAPredictionEngine from "./gpa-prediction/gpa-prediction";
+import GameHub from "./game-hub/game-hub";
+import { useRouter } from "next/navigation";
 
 // ============================================================================
 // API INTEGRATION AND INTERFACES (COMMENTED OUT UNTIL BACKEND IS READY)
@@ -58,7 +61,7 @@ const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title
       <div className="flex items-center gap-3">
         <div className="relative">
           <div className="w-10 h-10 rounded-xl bg-white border border-[rgba(15,110,63,0.12)] flex items-center justify-center text-[#1e3d27] cursor-pointer hover:bg-[#e6faf0] transition-all shadow-sm">
-            <i className="fas fa-bell text-sm"></i>
+            <Bell className="w-4 h-4" />
           </div>
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#22b864] text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
@@ -421,9 +424,10 @@ const DashboardView: React.FC = () => {
 
 const StudentDashboard: React.FC = () => {
   const { activeSection = "dashboard" } = useStudent();
+  const router = useRouter();
 
   const renderView = () => {
-    const sections = ["dashboard", "courses", "results", "purchases", "pdf-library", "notifications"];
+    const sections = ["dashboard", "courses", "results", "purchases", "pdf-library", "notifications", "gpa-predictor", 'game-hub'];
     const screens = [
       <DashboardView />,
       <MyCourses />,
@@ -431,6 +435,8 @@ const StudentDashboard: React.FC = () => {
       <MerchResources />,
       <PdfLibrary />,
       <NotificationsPage />,
+      <GPAPredictionEngine />,
+      <GameHub />
     ]
     
     const activeIndex = sections.indexOf(activeSection);

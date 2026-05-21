@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { FileText, Download, Eye, ChevronDown, Library } from "lucide-react";
+import { FileText, Download, Eye, ChevronDown, Library, Bell } from "lucide-react";
 import { useStudent } from "../layout";
 
 // ============================================================================
@@ -19,7 +19,11 @@ import { useStudent } from "../layout";
 // ============================================================================
 
 // Custom StudentHeader component matching NacosHub aesthetic
-const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title, unreadCount }) => {
+const StudentHeader: React.FC<{ 
+  title: string; 
+  unreadCount: number;
+  onSearch: (query: string) => void;
+}> = ({ title, unreadCount, onSearch }) => {
   const [currentDate] = useState(() => {
     const d = new Date();
     return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -39,7 +43,7 @@ const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title
       <div className="flex items-center gap-3">
         <div className="relative">
           <div className="w-10 h-10 rounded-xl bg-white border border-[rgba(15,110,63,0.12)] flex items-center justify-center text-[#1e3d27] cursor-pointer hover:bg-[#e6faf0] transition-all shadow-sm">
-            <i className="fas fa-bell text-sm"></i>
+            <Bell className="w-4 h-4" />
           </div>
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#22b864] text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
@@ -51,6 +55,7 @@ const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title
           <i className="fas fa-search text-[#6a9975] text-sm"></i>
           <input 
             type="text" 
+            onChange={(e) => onSearch(e.target.value)}
             placeholder="Search PDFs..." 
             className="bg-transparent border-none outline-none text-sm font-sans text-[#071a0d] placeholder:text-[#6a9975] w-36 sm:w-48"
           />
@@ -64,6 +69,7 @@ const PdfLibrary: React.FC = () => {
   const { unreadCount = 1, showToast } = useStudent();
   const [loading, setLoading] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState("400 Level");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Complete PDF library by level - matching original NacosHub structure
   const pdfLibraryByLevel: Record<string, Array<{ id: string; title: string; size: string; level: string; description: string }>> = {
@@ -92,6 +98,13 @@ const PdfLibrary: React.FC = () => {
   // Fallback state matching design.
   // DELETE / COMMENT these variables out once API fetching is enabled.
   const [pdfResources, setPdfResources] = useState(pdfLibraryByLevel["400 Level"]);
+
+  // Filter resources based on search query
+  const filteredResources = pdfResources.filter(pdf => 
+    pdf.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    pdf.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    pdf.level.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // ============================================================================
   // COMMENTED API CALL EXAMPLE: UNCOMMENT THIS BLOCK TO INTEGRATE YOUR BACKEND
@@ -153,12 +166,16 @@ const PdfLibrary: React.FC = () => {
   const totalPdfs = Object.values(pdfLibraryByLevel).reduce((sum, arr) => sum + arr.length, 0);
   
   // Get current level PDF count
-  const currentLevelCount = pdfResources.length;
+  const currentLevelCount = filteredResources.length;
 
   return (
     <div className="flex flex-col gap-6 md:gap-8 flex-1 pb-10 max-w-7xl mx-auto w-full">
       {/* Header Panel */}
-      <StudentHeader title="PDF Library" unreadCount={unreadCount} />
+      <StudentHeader 
+        title="PDF Library" 
+        unreadCount={unreadCount} 
+        onSearch={setSearchQuery}
+      />
 
       {/* Stats Row - Matching NacosHub dashboard style */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -248,11 +265,17 @@ const PdfLibrary: React.FC = () => {
           /* Library Card Grid */
           <div className="p-5 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 w-full">
-              {pdfResources.map((pdf, idx) => (
+              {filteredResources.map((pdf, idx) => (
                 <div
                   key={pdf.id}
                   className="group bg-white border border-[#d8eedd] rounded-2xl p-5 flex flex-col justify-between hover:border-[#88e8b0] hover:shadow-md transition-all duration-300 relative overflow-hidden"
-                  style={{ animationDelay: `${idx * 0.05}s`, animation: 'fadeUp 0.4s ease both' }}
+                  style={{ 
+                    animationName: 'fadeUp',
+                    animationDuration: '0.4s',
+                    animationTimingFunction: 'ease',
+                    animationFillMode: 'both',
+                    animationDelay: `${idx * 0.05}s` 
+                  }}
                 >
                   {/* Decorative background element */}
                   <div className="absolute -right-6 -top-6 w-24 h-24 bg-[#22b864]/5 rounded-full blur-xl group-hover:bg-[#22b864]/10 transition-colors"></div>
@@ -309,12 +332,12 @@ const PdfLibrary: React.FC = () => {
             </div>
 
             {/* Empty state */}
-            {pdfResources.length === 0 && (
+            {filteredResources.length === 0 && (
               <div className="py-16 flex flex-col items-center justify-center text-center">
                 <div className="w-16 h-16 rounded-full bg-[#e6faf0] flex items-center justify-center mb-4">
                   <FileText className="w-6 h-6 text-[#6a9975]" />
                 </div>
-                <h4 className="text-base font-bold text-[#071a0d]">No PDFs available</h4>
+                <h4 className="text-base font-bold text-[#071a0d]">No results found</h4>
                 <p className="text-sm text-[#6a9975] mt-1">No resources found for {selectedLevel}</p>
               </div>
             )}

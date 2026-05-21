@@ -12,6 +12,8 @@ import {
   Leaf,
   Sparkles,
   X,
+  Brain,
+  Gamepad,
 } from "lucide-react";
 import StudentProfileCard, { StudentProfile } from "./StudentProfileCard";
 
@@ -104,9 +106,19 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
 
   const activityNavItems = [
     {
+  id: "gpa-predictor",
+  icon: Brain,
+  label: "GPA Predictor",
+},
+    {
       id: "results",
       icon: GraduationCap,
       label: "Results",
+    },
+    {
+      id: "game-hub",
+      icon: Gamepad,
+      label: "Game Hub",
     },
     {
       id: "purchases",

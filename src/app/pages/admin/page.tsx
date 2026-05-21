@@ -40,7 +40,8 @@ import {
   Search,
   Download,
   ChartBar,
-  Cog
+  Cog,
+  Gamepad
 } from 'lucide-react';
 import Validator from '@/app/validators/auth-validator';
 import { Exco, ExcosManagement } from './manage-excos/manage-excos';
@@ -51,6 +52,7 @@ import CourseManagement from './manage-courses/manage-courses';
 import ResultsManagement from './manage-results/manage-results';
 import AdminSettings from './settings/settings';
 import CoreService from '@/app/hooks/core-service';
+import AdminGameManagement from './manage-games/manage-games';
 
 // --- Types ---
 type Student = {
@@ -713,7 +715,8 @@ const AdminPage: React.FC = () => {
     { id: 'staff', label: 'Staff Directory', icon: <UserCheck size={18} />, permission: 'manage_staff' },
     { id: 'finance', label: 'Finance & Dues', icon: <Coins size={18} />, permission: 'manage_finance' },
     { id: 'events', label: 'Events', icon: <CalendarCheck size={18} />, badge: true, permission: 'manage_events' },
-    { id: 'settings', label: 'Settings', icon: <Cog size={18} />, permission: 'manage_settings' }
+    { id: 'settings', label: 'Settings', icon: <Cog size={18} />, permission: 'manage_settings' },
+    { id: 'games', label: 'Games', icon: <Gamepad  size={18} />, permission: 'manage_games' }
   ];
 
   const filteredNavItems = navItems.filter(item => {
@@ -1027,6 +1030,7 @@ const AdminPage: React.FC = () => {
         {/* Results Section */}
         {activeSection === 'results' && (<ResultsManagement/>)}
         {activeSection === 'settings' && (<AdminSettings/>)}
+        {activeSection === 'games' && (<AdminGameManagement/>)}
       </main>
 
       {/* Modals */}

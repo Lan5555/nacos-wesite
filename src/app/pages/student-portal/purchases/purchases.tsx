@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ShoppingBag, ShoppingCart, Book, Shirt, Database, Layout } from "lucide-react";
+import { ShoppingBag, ShoppingCart, Book, Shirt, Database, Layout, Bell, Search } from "lucide-react";
 import { useStudent } from "../layout";
 
 // ============================================================================
@@ -39,7 +39,7 @@ const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title
       <div className="flex items-center gap-3">
         <div className="relative">
           <div className="w-10 h-10 rounded-xl bg-white border border-[rgba(15,110,63,0.12)] flex items-center justify-center text-[#1e3d27] cursor-pointer hover:bg-[#e6faf0] transition-all shadow-sm">
-            <i className="fas fa-bell text-sm"></i>
+            <Bell className="w-4 h-4" />
           </div>
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#22b864] text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
@@ -48,7 +48,7 @@ const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title
           )}
         </div>
         <div className="flex items-center gap-3 bg-white border border-[rgba(15,110,63,0.12)] rounded-xl px-4 py-2 shadow-sm">
-          <i className="fas fa-search text-[#6a9975] text-sm"></i>
+          <Search className="w-4 h-4 text-[#6a9975]" />
           <input 
             type="text" 
             placeholder="Search merch, resources..." 

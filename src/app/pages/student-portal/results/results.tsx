@@ -1,26 +1,50 @@
 "use client";
 
-import React, { useState } from "react";
-import { GraduationCap, RotateCw, BarChart2 } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { 
+  GraduationCap, 
+  RotateCw, 
+  BarChart2, 
+  Bell,
+  Download, 
+  FileText, 
+  Filter,
+  ChevronDown,
+  Calendar,
+  BookOpen,
+  Eye,
+  Award,
+  Search
+} from "lucide-react";
 import { useStudent } from "../layout";
 
 // ============================================================================
-// API INTEGRATION AND INTERFACES (COMMENTED OUT UNTIL BACKEND IS READY)
-// ============================================================================
-// import CoreService from "@/app/hooks/core-service";
-//
-// interface CourseResult {
-//   id: string;
-//   code: string;
-//   title: string;
-//   grade: string;
-//   score: number;
-//   gradeProgress: number; // percentage value to fill the decorative rating bar (e.g. 90% for A)
-// }
+// TYPES & INTERFACES
 // ============================================================================
 
-// Custom StudentHeader component matching NacosHub aesthetic
-const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title, unreadCount }) => {
+interface ResultPDF {
+  id: number;
+  course: string;
+  code: string;
+  level: number;
+  department: string;
+  file: string;
+  createdAt: string;
+  session: string;
+  semester: string;
+  score?: number;
+  grade?: string;
+}
+
+// ============================================================================
+// STUDENT HEADER COMPONENT
+// ============================================================================
+
+const StudentHeader: React.FC<{ 
+  title: string; 
+  unreadCount: number;
+  onSearch: (query: string) => void;
+}> = ({ title, unreadCount, onSearch }) => {
   const [currentDate] = useState(() => {
     const d = new Date();
     return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -40,7 +64,7 @@ const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title
       <div className="flex items-center gap-3">
         <div className="relative">
           <div className="w-10 h-10 rounded-xl bg-white border border-[rgba(15,110,63,0.12)] flex items-center justify-center text-[#1e3d27] cursor-pointer hover:bg-[#e6faf0] transition-all shadow-sm">
-            <i className="fas fa-bell text-sm"></i>
+            <Bell className="w-4 h-4" />
           </div>
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#22b864] text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
@@ -49,10 +73,11 @@ const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title
           )}
         </div>
         <div className="flex items-center gap-3 bg-white border border-[rgba(15,110,63,0.12)] rounded-xl px-4 py-2 shadow-sm">
-          <i className="fas fa-search text-[#6a9975] text-sm"></i>
+          <Search className="w-4 h-4 text-[#6a9975]" />
           <input 
             type="text" 
-            placeholder="Search courses, results..." 
+            onChange={(e) => onSearch(e.target.value)}
+            placeholder="Search results..." 
             className="bg-transparent border-none outline-none text-sm font-sans text-[#071a0d] placeholder:text-[#6a9975] w-36 sm:w-48"
           />
         </div>
@@ -61,231 +86,503 @@ const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title
   );
 };
 
+// ============================================================================
+// MAIN ACADEMIC RESULTS COMPONENT
+// ============================================================================
+
 const AcademicResults: React.FC = () => {
   const { unreadCount = 3, showToast } = useStudent();
   const [refreshing, setRefreshing] = useState(false);
+  const [results, setResults] = useState<ResultPDF[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Filter states
+  const [selectedLevel, setSelectedLevel] = useState<number>(400);
+  const [selectedSession, setSelectedSession] = useState<string>("2025/2026");
+  const [selectedSemester, setSelectedSemester] = useState<string>("First Semester");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("Computer Science");
+  
+  // Available filter options
+  const availableSessions = ["2025/2026", "2024/2025", "2023/2024", "2022/2023"];
+  const availableSemesters = ["First Semester", "Second Semester"];
+  const availableLevels = [100, 200, 300, 400];
+  const availableDepartments = ["Computer Science", "Mathematics", "Physics", "Chemistry", "Biology", "Engineering"];
 
-  // Fallback results state matching design.
-  // DELETE / COMMENT these variables out once API fetching is enabled.
-  const [results, setResults] = useState([
+  // Mock result PDFs data (would come from API in production)
+  const mockResults: ResultPDF[] = [
     {
-      id: "csc401",
-      code: "CSC 401",
-      title: "Advanced Software Engineering",
-      grade: "A",
-      score: 82,
-      progress: 92, // decorative bar percentage
+      id: 1,
+      course: "Elementary Mathematics 1",
+      code: "MTH 101",
+      level: 100,
+      department: "Computer Science",
+      file: "#",
+      createdAt: "2026-05-19T11:33:48.414Z",
+      session: "2025/2026",
+      semester: "First Semester",
+      score: 85,
+      grade: "A"
     },
     {
-      id: "csc405",
-      code: "CSC 405",
-      title: "Machine Learning",
-      grade: "B+",
+      id: 2,
+      course: "Elementary Mathematics 2",
+      code: "MTH 102",
+      level: 100,
+      department: "Computer Science",
+      file: "#",
+      createdAt: "2026-05-19T11:33:48.414Z",
+      session: "2025/2026",
+      semester: "First Semester",
       score: 78,
-      progress: 82,
+      grade: "B+"
     },
     {
-      id: "csc411",
+      id: 3,
+      course: "Introduction to Programming",
+      code: "CSC 101",
+      level: 100,
+      department: "Computer Science",
+      file: "#",
+      createdAt: "2026-05-19T11:33:48.414Z",
+      session: "2025/2026",
+      semester: "First Semester",
+      score: 92,
+      grade: "A"
+    },
+    {
+      id: 4,
+      course: "Discrete Mathematics",
+      code: "MTH 201",
+      level: 200,
+      department: "Computer Science",
+      file: "#",
+      createdAt: "2026-05-19T11:33:48.414Z",
+      session: "2025/2026",
+      semester: "First Semester",
+      score: 82,
+      grade: "A-"
+    },
+    {
+      id: 5,
+      course: "Data Structures",
+      code: "CSC 201",
+      level: 200,
+      department: "Computer Science",
+      file: "#",
+      createdAt: "2026-05-19T11:33:48.414Z",
+      session: "2025/2026",
+      semester: "First Semester",
+      score: 76,
+      grade: "B"
+    },
+    {
+      id: 6,
+      course: "Advanced Software Engineering",
+      code: "CSC 401",
+      level: 400,
+      department: "Computer Science",
+      file: "#",
+      createdAt: "2026-05-19T11:33:48.414Z",
+      session: "2025/2026",
+      semester: "First Semester",
+      score: 82,
+      grade: "A-"
+    },
+    {
+      id: 7,
+      course: "Machine Learning",
+      code: "CSC 405",
+      level: 400,
+      department: "Computer Science",
+      file: "#",
+      createdAt: "2026-05-19T11:33:48.414Z",
+      session: "2025/2026",
+      semester: "First Semester",
+      score: 78,
+      grade: "B+"
+    },
+    {
+      id: 8,
+      course: "Cloud Computing",
       code: "CSC 411",
-      title: "Cloud Computing",
-      grade: "A-",
+      level: 400,
+      department: "Computer Science",
+      file: "#",
+      createdAt: "2026-05-19T11:33:48.414Z",
+      session: "2025/2026",
+      semester: "First Semester",
       score: 80,
-      progress: 88,
+      grade: "A-"
     },
     {
-      id: "ent402",
+      id: 9,
+      course: "Entrepreneurship",
       code: "ENT 402",
-      title: "Entrepreneurship",
-      grade: "B",
+      level: 400,
+      department: "Computer Science",
+      file: "#",
+      createdAt: "2026-05-19T11:33:48.414Z",
+      session: "2025/2026",
+      semester: "First Semester",
       score: 74,
-      progress: 75,
+      grade: "B"
     },
-  ]);
+  ];
 
-  // ============================================================================
-  // COMMENTED API CALL EXAMPLE: UNCOMMENT THIS BLOCK TO INTEGRATE YOUR BACKEND
-  // ============================================================================
-  // const fetchResults = async () => {
-  //   setRefreshing(true);
-  //   const service = new CoreService();
-  //   try {
-  //     const response = await service.get("content/v1/student/results");
-  //     if (response.success && response.data) {
-  //       // setResults(response.data);
-  //       showToast("Academic scores synced successfully!", "success");
-  //     }
-  //   } catch (error) {
-  //     console.error("Failed to load results from API:", error);
-  //     showToast("Could not contact results service.", "error");
-  //   } finally {
-  //     setRefreshing(false);
-  //   }
-  // };
-  // ============================================================================
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    
-    // Simulate API delay
-    setTimeout(() => {
-      setRefreshing(false);
-      showToast("Scores refreshed successfully!", "success");
+  // Filter results based on selected filters
+  const filteredResults = useMemo(() => {
+    return results.filter(result => {
+      const matchesSearch = 
+        result.course.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        result.code.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // UNCOMMENT when API is connected:
-      // fetchResults();
+      return matchesSearch &&
+      result.level === selectedLevel &&
+      result.session === selectedSession &&
+      result.semester === selectedSemester &&
+      result.department === selectedDepartment;
+    });
+  }, [results, selectedLevel, selectedSession, selectedSemester, selectedDepartment, searchQuery]);
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const scores = filteredResults.map(r => r.score || 0);
+    const totalScore = scores.reduce((sum, s) => sum + s, 0);
+    const averageScore = scores.length > 0 ? totalScore / scores.length : 0;
+    const gpa = averageScore / 20; // Convert to 5.0 scale (approx)
+    const totalCredits = filteredResults.length * 3; // Assuming 3 credits per course
+    const gradePoints = filteredResults.reduce((sum, r) => {
+      const gradeMap: Record<string, number> = { 'A': 5.0, 'A-': 4.5, 'B+': 4.0, 'B': 3.5, 'B-': 3.0, 'C+': 2.5, 'C': 2.0, 'D': 1.0, 'F': 0 };
+      return sum + (gradeMap[r.grade || 'F'] || 0) * 3;
+    }, 0);
+    const calculatedGPA = totalCredits > 0 ? gradePoints / totalCredits : 0;
+    
+    return {
+      averageScore: averageScore.toFixed(1),
+      totalCourses: filteredResults.length,
+      gpa: calculatedGPA.toFixed(2),
+      totalCredits,
+    };
+  }, [filteredResults]);
+
+  // Get grade classification
+  const getClassification = (gpa: number) => {
+    if (gpa >= 4.5) return { text: "First Class", color: "#22b864" };
+    if (gpa >= 3.5) return { text: "Second Class Upper", color: "#4fd68a" };
+    if (gpa >= 2.5) return { text: "Second Class Lower", color: "#c8a84b" };
+    if (gpa >= 1.5) return { text: "Third Class", color: "#e67e22" };
+    return { text: "Pass", color: "#e74c3c" };
+  };
+
+  const classification = getClassification(parseFloat(stats.gpa));
+
+  // Fetch results (would call API in production)
+  const fetchResults = async () => {
+    setLoading(true);
+    // Simulate API call
+    setTimeout(() => {
+      setResults(mockResults);
+      setLoading(false);
     }, 800);
   };
+
+  // Handle PDF preview
+  const handlePreview = async (result: ResultPDF) => {
+    try {
+      showToast(`Opening ${result.course} result preview...`, "info");
+      
+      // In production, this would open the actual file URL
+      // For now, simulate opening
+      setTimeout(() => {
+        window.open(result.file, '_blank');
+      }, 500);
+      
+    } catch (error) {
+      showToast("Failed to preview result. Please try again.", "error");
+    }
+  };
+
+  // Handle batch download
+  const handleBatchDownload = () => {
+    if (filteredResults.length === 0) {
+      showToast("No results available to download", "error");
+      return;
+    }
+    showToast(`Downloading ${filteredResults.length} results...`, "info");
+    setTimeout(() => {
+      showToast(`Successfully downloaded ${filteredResults.length} results!`, "success");
+    }, 1500);
+  };
+
+  // Handle refresh
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      fetchResults();
+      setRefreshing(false);
+      showToast("Results refreshed successfully!", "success");
+    }, 800);
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchResults();
+  }, []);
 
   return (
     <div className="flex flex-col gap-6 md:gap-8 flex-1 pb-10 max-w-7xl mx-auto w-full">
       {/* Header Panel */}
-      <StudentHeader title="Academic Results" unreadCount={unreadCount} />
+      <StudentHeader title="Academic Results" unreadCount={unreadCount} onSearch={setSearchQuery} />
 
-      {/* Two Column Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-start w-full">
-        
-        {/* Left Column: Academic Results Detailed Cards */}
-        <div className="lg:col-span-2 bg-white border border-[#d8eedd] rounded-3xl shadow-sm overflow-hidden flex flex-col">
-          {/* Card Header with Refresh Action */}
-          <div className="flex items-center justify-between border-b border-[#d8eedd] p-5 md:px-6">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#e6faf0] flex items-center justify-center text-[#0f6e3f]">
-                <GraduationCap className="w-4 h-4" />
-              </div>
-              <h3 className="text-lg font-bold text-[#071a0d] font-serif">
-                Academic Results
-              </h3>
+      {/* Filter Section */}
+      <div className="bg-white border border-[#d8eedd] rounded-2xl p-5 shadow-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="w-4 h-4 text-[#22b864]" />
+          <h3 className="text-sm font-bold text-[#071a0d]">Filter Results</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-[#6a9975] mb-1">Level</label>
+            <select
+              value={selectedLevel}
+              onChange={(e) => setSelectedLevel(parseInt(e.target.value))}
+              className="w-full p-2 border border-[#d8eedd] rounded-lg text-sm bg-white focus:outline-none focus:border-[#22b864]"
+            >
+              {availableLevels.map(level => (
+                <option key={level} value={level}>{level} Level</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#6a9975] mb-1">Session</label>
+            <select
+              value={selectedSession}
+              onChange={(e) => setSelectedSession(e.target.value)}
+              className="w-full p-2 border border-[#d8eedd] rounded-lg text-sm bg-white focus:outline-none focus:border-[#22b864]"
+            >
+              {availableSessions.map(session => (
+                <option key={session} value={session}>{session}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#6a9975] mb-1">Semester</label>
+            <select
+              value={selectedSemester}
+              onChange={(e) => setSelectedSemester(e.target.value)}
+              className="w-full p-2 border border-[#d8eedd] rounded-lg text-sm bg-white focus:outline-none focus:border-[#22b864]"
+            >
+              {availableSemesters.map(semester => (
+                <option key={semester} value={semester}>{semester}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#6a9975] mb-1">Department</label>
+            <select
+              value={selectedDepartment}
+              onChange={(e) => setSelectedDepartment(e.target.value)}
+              className="w-full p-2 border border-[#d8eedd] rounded-lg text-sm bg-white focus:outline-none focus:border-[#22b864]"
+            >
+              {availableDepartments.map(dept => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Summary Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white border border-[#d8eedd] rounded-xl p-4 text-center">
+          <div className="text-[10px] font-bold uppercase text-[#6a9975]">Total Courses</div>
+          <div className="text-2xl font-bold text-[#071a0d] font-serif mt-1">{stats.totalCourses}</div>
+        </div>
+        <div className="bg-white border border-[#d8eedd] rounded-xl p-4 text-center">
+          <div className="text-[10px] font-bold uppercase text-[#6a9975]">Average Score</div>
+          <div className="text-2xl font-bold text-[#071a0d] font-serif mt-1">{stats.averageScore}%</div>
+        </div>
+        <div className="bg-white border border-[#d8eedd] rounded-xl p-4 text-center">
+          <div className="text-[10px] font-bold uppercase text-[#6a9975]">Semester GPA</div>
+          <div className="text-2xl font-bold text-[#071a0d] font-serif mt-1">{stats.gpa}</div>
+        </div>
+        <div className="bg-white border border-[#d8eedd] rounded-xl p-4 text-center">
+          <div className="text-[10px] font-bold uppercase text-[#6a9975]">Classification</div>
+          <div className="text-sm font-bold mt-1" style={{ color: classification.color }}>{classification.text}</div>
+        </div>
+      </div>
+
+      {/* Results Table */}
+      <div className="bg-white border border-[#d8eedd] rounded-3xl shadow-sm overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between border-b border-[#d8eedd] p-5 md:px-6 gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#e6faf0] flex items-center justify-center text-[#0f6e3f]">
+              <GraduationCap className="w-4 h-4" />
             </div>
-
-            {/* Refresh Button */}
+            <h3 className="text-lg font-bold text-[#071a0d] font-serif">
+              Result Downloads
+            </h3>
+            <span className="text-xs text-[#6a9975] ml-2">
+              ({filteredResults.length} {filteredResults.length === 1 ? 'result' : 'results'})
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* <button
+              onClick={handleBatchDownload}
+              disabled={filteredResults.length === 0}
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#0f6e3f] text-white rounded-xl text-xs font-semibold hover:bg-[#22b864] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Download All
+            </button> */}
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className={`flex items-center gap-1.5 px-4 py-2 border border-[#d8eedd] bg-white hover:bg-[#f5f9f6] text-[#3a6645] hover:text-[#071a0d] transition-all rounded-xl text-xs font-bold shadow-sm cursor-pointer active:scale-95 ${
-                refreshing ? "opacity-75 cursor-wait" : ""
-              }`}
+              className="flex items-center gap-1.5 px-4 py-2 border border-[#d8eedd] bg-white hover:bg-[#f5f9f6] text-[#3a6645] rounded-xl text-xs font-semibold transition-all"
             >
-              <RotateCw className={`w-3.5 h-3.5 text-[#22b864] ${refreshing ? "animate-spin" : ""}`} />
-              <span>Refresh</span>
+              <RotateCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              Refresh
             </button>
           </div>
-
-          {/* Results rows list */}
-          <div className="p-5 md:p-6 space-y-4">
-            {results.map((result, idx) => (
-              <div
-                key={result.id}
-                className="group flex items-center justify-between p-4 bg-[#f2fbf6]/50 border border-[#d8eedd] rounded-xl hover:bg-white hover:border-[#88e8b0] hover:shadow-md transition-all duration-300 gap-4"
-                style={{ animationDelay: `${idx * 0.05}s`, animation: 'fadeUp 0.4s ease both' }}
-              >
-                {/* Course Metadata */}
-                <div className="flex flex-col min-w-0">
-                  <h4 className="text-sm md:text-base font-bold text-[#071a0d] font-sans truncate">
-                    {result.title}
-                  </h4>
-                  <span className="text-[11px] font-mono font-semibold text-[#6a9975] mt-0.5 uppercase tracking-wide">
-                    {result.code}
-                  </span>
-                </div>
-
-                {/* Performance Visualizer Bar & Grade Letter */}
-                <div className="flex items-center gap-4 sm:gap-6 shrink-0">
-                  {/* Rating progress line with circular knob */}
-                  <div className="w-20 sm:w-28 h-1.5 bg-[#e6faf0] border border-[#d8eedd]/40 rounded-full relative hidden sm:block">
-                    <div
-                      className="h-full bg-linear-to-r from-[#22b864] to-[#4fd68a] rounded-full absolute left-0 top-0 transition-all duration-700"
-                      style={{ width: `${result.progress}%` }}
-                    ></div>
-                    {/* Circle Knob at the end of progress */}
-                    <div
-                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-[#22b864] border-2 border-white shadow-md group-hover:scale-125 transition-transform"
-                      style={{ left: `${result.progress}%` }}
-                    ></div>
-                  </div>
-
-                  {/* Letter Grade Circle Badge */}
-                  <div className="w-10 h-10 rounded-full bg-white border border-[#d8eedd] flex items-center justify-center font-black text-sm text-[#22b864] shadow-sm group-hover:bg-[#22b864] group-hover:text-white group-hover:border-transparent transition-all duration-200">
-                    {result.grade}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
 
-        {/* Right Column: Numerical Score Overview */}
-        <div className="bg-white border border-[#d8eedd] rounded-3xl shadow-sm p-5 md:p-6 flex flex-col">
-          <div className="flex items-center gap-2.5 border-b border-[#d8eedd] pb-4 mb-5 md:mb-6">
-            <div className="w-8 h-8 rounded-lg bg-[#e6faf0] flex items-center justify-center text-[#0f6e3f]">
-              <BarChart2 className="w-4 h-4" />
+        <div className="overflow-x-auto">
+          {loading ? (
+            <div className="p-12 text-center">
+              <div className="w-12 h-12 border-4 border-[#e6faf0] border-t-[#22b864] rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-[#6a9975]">Loading results...</p>
             </div>
-            <h3 className="text-lg font-bold text-[#071a0d] font-serif">
-              Score Overview
-            </h3>
-          </div>
-
-          {/* List of horizontal progress bars depicting raw numerical grade score */}
-          <div className="space-y-5">
-            {results.map((result) => (
-              <div key={result.id} className="flex flex-col gap-2">
-                <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-[#3a6645] font-mono text-[11px] font-bold tracking-wide">{result.code}</span>
-                  <span className="text-[#071a0d] font-black font-serif text-base">{result.score}</span>
-                </div>
-                {/* Score slider rail */}
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 h-2 bg-[#e6faf0] border border-[#d8eedd]/40 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-linear-to-r from-[#0f6e3f] to-[#22b864] rounded-full transition-all duration-700 shadow-sm"
-                      style={{ width: `${result.score}%` }}
-                    ></div>
-                  </div>
-                </div>
+          ) : filteredResults.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 bg-[#e6faf0] rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-8 h-8 text-[#6a9975]" />
               </div>
-            ))}
-          </div>
-
-          {/* Quick stats summary - matching nacos dashboard style */}
-          <div className="mt-6 pt-5 border-t border-[#d8eedd]">
-            <div className="flex justify-between items-center">
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-[#6a9975]">Current GPA</div>
-                <div className="font-serif text-2xl text-[#071a0d]">3.82</div>
-              </div>
-              <div className="text-right">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-[#6a9975]">Credits Earned</div>
-                <div className="font-serif text-2xl text-[#071a0d]">24</div>
-              </div>
+              <p className="text-[#6a9975] font-medium">No results found</p>
+              <p className="text-xs text-[#6a9975] mt-1">Try adjusting your filters</p>
             </div>
-            <div className="mt-3 h-1.5 bg-[#e6faf0] rounded-full overflow-hidden">
-              <div className="h-full w-[76%] bg-linear-to-r from-[#22b864] to-[#4fd68a] rounded-full"></div>
-            </div>
-            <div className="flex justify-between mt-1 text-[10px] text-[#6a9975]">
-              <span>Progress to graduation</span>
-              <span>76%</span>
-            </div>
-          </div>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-[#f2fbf6] border-b border-[#d8eedd]">
+                <tr>
+                  <th className="text-left p-4 text-xs font-bold text-[#6a9975] uppercase tracking-wider">Course Code</th>
+                  <th className="text-left p-4 text-xs font-bold text-[#6a9975] uppercase tracking-wider">Course Title</th>
+                  <th className="text-center p-4 text-xs font-bold text-[#6a9975] uppercase tracking-wider">Grade</th>
+                  <th className="text-center p-4 text-xs font-bold text-[#6a9975] uppercase tracking-wider">Score</th>
+                  <th className="text-center p-4 text-xs font-bold text-[#6a9975] uppercase tracking-wider">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredResults.map((result, idx) => (
+                  <tr 
+                    key={result.id} 
+                    className="border-b border-[#d8eedd] hover:bg-[#f2fbf6] transition-colors"
+                    style={{ 
+                      animationName: 'fadeUp',
+                      animationDuration: '0.3s',
+                      animationTimingFunction: 'ease',
+                      animationFillMode: 'both',
+                      animationDelay: `${idx * 0.03}s` 
+                    }}
+                  >
+                    <td className="p-4">
+                      <span className="text-sm font-mono font-bold text-[#22b864]">{result.code}</span>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-sm font-medium text-[#071a0d]">{result.course}</span>
+                    </td>
+                    <td className="p-4 text-center">
+                      <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold ${
+                        result.grade?.startsWith('A') ? 'bg-[#22b864]/20 text-[#22b864]' :
+                        result.grade?.startsWith('B') ? 'bg-[#4fd68a]/20 text-[#0f6e3f]' :
+                        'bg-[#c8a84b]/20 text-[#c8a84b]'
+                      }`}>
+                        {result.grade}
+                      </span>
+                    </td>
+                    <td className="p-4 text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-sm font-bold text-[#071a0d]">{result.score}%</span>
+                        <div className="w-16 h-1.5 bg-[#e6faf0] rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-[#22b864] rounded-full"
+                            style={{ width: `${result.score}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 text-center">
+                      <button
+                        onClick={() => handlePreview(result)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#22b864] text-[#0f6e3f] rounded-lg text-xs font-semibold hover:bg-[#22b864] hover:text-white transition-all mx-auto"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        Preview Result
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
+        {/* Footer with summary */}
+        <div className="border-t border-[#d8eedd] p-4 md:px-6 bg-[#f2fbf6]/30">
+          <div className="flex items-center justify-between text-xs text-[#6a9975]">
+            <div className="flex items-center gap-4">
+              <span><i className="fas fa-file-pdf text-red-500 mr-1"></i> {filteredResults.length} PDF results available</span>
+              <span><i className="fas fa-eye mr-1"></i> Click preview to view your result</span>
+            </div>
+            <span className="font-mono text-[10px] bg-white px-2 py-1 rounded-full border border-[#d8eedd]">
+              {selectedSession} • {selectedSemester} • Level {selectedLevel}
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* Toast container - matching nacos style */}
-      <div id="toast-root" className="fixed bottom-6 right-6 z-50"></div>
+      {/* Quick Stats Summary Card */}
+      <div className="bg-linear-to-r from-[#0a4a20] to-[#0f6e3f] rounded-2xl p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Award className="w-8 h-8 text-[#4fd68a]" />
+            <div>
+              <p className="text-xs text-[#88e8b0]">Your Performance Summary</p>
+              <p className="text-sm font-bold text-white">
+                {stats.totalCourses} courses • {stats.totalCredits} credits • GPA: {stats.gpa}
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-[#88e8b0]">Classification</p>
+            <p className="text-lg font-bold text-white" style={{ color: classification.color }}>
+              {classification.text}
+            </p>
+          </div>
+        </div>
+      </div>
 
       <style jsx>{`
         @keyframes fadeUp {
           from {
             opacity: 0;
-            transform: translateY(12px);
+            transform: translateY(10px);
           }
           to {
             opacity: 1;
             transform: translateY(0);
           }
         }
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
       `}</style>
     </div>
   );
-}
+};
 
 export default AcademicResults;
