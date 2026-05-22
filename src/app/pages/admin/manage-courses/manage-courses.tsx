@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Plus, FileText, Upload, X, Search, Edit2, Trash2,
   BookOpen, FolderOpen, Download, CheckCircle, AlertCircle, Loader2
@@ -34,7 +34,7 @@ const service = new CoreService();
 
 const CourseManagement: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [pageLoading, setPageLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
@@ -75,19 +75,20 @@ const CourseManagement: React.FC = () => {
   }
 
   // Fetch all courses
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
+    if (courses.length === 0) {
+        setPageLoading(true);
+      }
     try {
-      setPageLoading(true);
       const result = await service.get("courses/find-all-courses");
       if (result.success) {
         setCourses(result.data ?? []);
       }
     } catch {
       showToast("Failed to load courses", "error");
-    } finally {
-      setPageLoading(false);
     }
-  };
+    setPageLoading(false);
+  }, []);
 
   useEffect(() => {
     fetchCourses();
