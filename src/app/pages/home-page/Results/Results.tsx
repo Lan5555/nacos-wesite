@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import CoreService from "@/app/hooks/core-service";
 import styles from "./Results.module.css";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 interface Result {
@@ -53,6 +54,7 @@ const levelOrder = [
 const Results: React.FC = () => {
   const [activeLevel, setActiveLevel] = useState(0);
   const [allResults, setAllResults] = useState<Result[]>([]);
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [tabLoading, setTabLoading] = useState(false);
 
@@ -188,7 +190,7 @@ const Results: React.FC = () => {
                       <td>{result.semester}</td>
                       <td>
                         <a
-                          href={result.file}
+                          onClick={() => router.push('/pages/login')}
                           target="_blank"
                           rel="noopener noreferrer"
                           className={styles.fileLink}

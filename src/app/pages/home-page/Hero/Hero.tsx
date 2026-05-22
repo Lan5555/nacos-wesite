@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import CoreService from "@/app/hooks/core-service";
 import styles from "./Hero.module.css";
 import { useToast } from "@/app/providers/toast-provider";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
 interface HeroData {
   totalUsers?: number;
   totalEvents?: number;
 }
-
 
 const resourceLevels = [
   { label: "100 Level", count: 24, pct: 85 },
@@ -29,6 +29,7 @@ const Hero: React.FC<HeroProps> = ({ sharedData, isLoading }) => {
 
   const [data, setData] = useState<HeroData | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
   const { showToast } = useToast();
   const service: CoreService = new CoreService();
 
@@ -145,8 +146,13 @@ const Hero: React.FC<HeroProps> = ({ sharedData, isLoading }) => {
             variants={fadeUp}
             custom={0.4}
           >
-            <button className={styles.ctaPrimary}>Access Dashboard →</button>
-            <button className={styles.ctaSecondary}>Learn About NACOS</button>
+            <button className={styles.ctaPrimary}
+            onClick={() => {
+            router.push('/pages/login')
+
+          }}>Access Dashboard →</button>
+          
+            <button className={styles.ctaSecondary} id="about" >Learn About NACOS</button>
           </motion.div>
 
           <motion.div
