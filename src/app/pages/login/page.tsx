@@ -5,6 +5,7 @@ import React, { FormEvent, useEffect, useState } from 'react';
 import {BookOpen,BarChart3,CalendarDays,Bell,Users, Loader,} from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { FaRegEyeSlash,FaRegEye } from "react-icons/fa6";
+import Image from 'next/image';
 
 
 
@@ -45,7 +46,7 @@ const NacosLogin: React.FC = () => {
   ];
 
   const levelOptions = ['100 Level', '200 Level', '300 Level', '400 Level', '500 Level'];
-  const institutionOptions = ['UNN', 'UNILAG', 'OAU', 'UI', 'ABU', 'FUTA', 'UNIBEN', 'UNIPORT', 'Other'];
+  const institutionOptions = ['Unijos', 'UNILAG', 'OAU', 'UI', 'ABU', 'FUTA', 'UNIBEN', 'UNIPORT', 'Other'];
 
   const checkStrength = (pw: string) => {
     let score = 0;
@@ -130,8 +131,14 @@ const NacosLogin: React.FC = () => {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-11 h-11 rounded-xl bg-linear-to-br from-[#28a228] to-[#72d872] flex items-center justify-center font-bold text-white text-base">N</div>
-            <div className="text-white text-xl font-bold tracking-tight">NAC<span className="text-[#72d872]">OS</span> Nigeria</div>
+            <Image
+                        src="/nacos.png"
+                        alt="NACOS Logo"
+                        width={40}
+                        height={40}
+                        className="w-11 h-11 rounded-xl bg-linear-to-br from-[#28a228] to-[#72d872] flex items-center justify-center font-bold text-white text-base"
+                      />
+            <div className="text-white text-xl font-bold tracking-tight">NAC<span className="text-[#72d872]">OS</span> Unijos</div>
           </div>
 
           <h2 className="text-white text-[2.8rem] font-bold leading-[1.1] tracking-[-0.03em] mb-5">
@@ -140,7 +147,7 @@ const NacosLogin: React.FC = () => {
             Here.
           </h2>
           <p className="text-white/55 text-base leading-relaxed max-w-90">
-            Log in to access study materials, view your results, track events, and connect with thousands of CS students across Nigeria.
+            Log in to access study materials, view your results, track events, and connect with thousands of CS students across Unijos.
           </p>
 
           <div className="flex flex-col gap-3 mt-10">
@@ -161,7 +168,7 @@ const NacosLogin: React.FC = () => {
 
         <div className="relative z-10">
           <p className="text-white/30 text-[0.78rem]">
-            © 2025 NACOS Nigeria · <a href="nacos_main.html" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Visit Website</a> · <a href="#" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Privacy</a> · <a href="#" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Support</a>
+            © 2025 NACOS Unijos · <a href="nacos_main.html" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Visit Website</a> · <a href="#" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Privacy</a> · <a href="#" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Support</a>
           </p>
         </div>
       </div>

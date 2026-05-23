@@ -138,9 +138,10 @@ const Excos: React.FC = () => {
           </h2>
 
           <p className={styles.subtext}>
-            Elected student leaders
-            championing excellence across
-            all NACOS chapters.
+            The passionate student leaders of NACOS UNIJOS,
+            driving innovation, collaboration, and growth.
+            Together, they shape a stronger tech community
+            and inspire the next generation of developers
           </p>
         </motion.div>
 
@@ -268,11 +269,11 @@ const Excos: React.FC = () => {
                             ),
                         }}
                       >
-                        {getInitials( exco.name  )}  </div> )}
-                    <div className={ styles.overlay } />
-                    <div className={ styles.backContent}>
-                     <h3>{exco.name}</h3>
-                     <p> {exco.position} </p> 
+                        {getInitials(exco.name)}  </div>)}
+                    <div className={styles.overlay} />
+                    <div className={styles.backContent}>
+                      <h3>{exco.name}</h3>
+                      <p> {exco.position} </p>
                     </div>
                   </div>
                 </motion.div>

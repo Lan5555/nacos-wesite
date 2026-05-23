@@ -2,14 +2,15 @@
 import CoreService from '@/app/hooks/core-service';
 import { useToast } from '@/app/providers/toast-provider';
 import React, { FormEvent, useEffect, useState } from 'react';
-import {BookOpen,BarChart3,CalendarDays,Bell,Users, LogIn, Loader,} from "lucide-react";
+import { BookOpen, BarChart3, CalendarDays, Bell, Users, LogIn, Loader, } from "lucide-react";
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 
-const coreService:CoreService = new CoreService();
+const coreService: CoreService = new CoreService();
 const NacosLogin: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
-  const {showToast} = useToast();
+  const { showToast } = useToast();
   const router = useRouter();
   // Login form state
   const [loginId, setLoginId] = useState('');
@@ -27,7 +28,7 @@ const NacosLogin: React.FC = () => {
   const [signupPw, setSignupPw] = useState('');
   const [showSignupPw, setShowSignupPw] = useState(false);
   const [pwStrength, setPwStrength] = useState({ score: 0, text: 'Enter a password', color: '#6a8a6a' });
-  
+
   const universities = [
     'University of Nigeria, Nsukka',
     'University of Lagos',
@@ -58,35 +59,35 @@ const NacosLogin: React.FC = () => {
     });
   };
 
-  const handleLogin = async(e:any) => {
+  const handleLogin = async (e: any) => {
     e.preventDefault();
     setLoading(true);
     const payload = {
       "email": loginId,
       "password": loginPw,
     }
-    try{
+    try {
       const res = await coreService.send('auth/login-admin', payload);
-      if(res.success){
+      if (res.success) {
         sessionStorage.setItem('token', res.data.access_token);
         sessionStorage.setItem('admin', JSON.stringify(res.data.admin));
         console.log(res.data.admin)
-        showToast(res.message || 'Login successful','success');
+        showToast(res.message || 'Login successful', 'success');
         router.push('/pages/admin');
-      }else{
-        showToast(res.message || 'Login failed. Please check your credentials and try again.','error');
+      } else {
+        showToast(res.message || 'Login failed. Please check your credentials and try again.', 'error');
       }
-    }catch(err){
-        showToast('Login failed. Please check your credentials and try again.','error');
-    }finally{
-        setLoading(false);
+    } catch (err) {
+      showToast('Login failed. Please check your credentials and try again.', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
 
-  const handleSignup = (e:any) => {
+  const handleSignup = (e: any) => {
     e.preventDefault();
-    showToast('Implement Sign in here','info');
+    showToast('Implement Sign in here', 'info');
   };
 
   return (
@@ -101,8 +102,14 @@ const NacosLogin: React.FC = () => {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-11 h-11 rounded-xl bg-linear-to-br from-[#288aa2] to-[#72d5d8] flex items-center justify-center font-bold text-white text-base">N</div>
-            <div className="text-white text-xl font-bold tracking-tight">NAC<span className="text-[#72d872]">OS</span> Nigeria</div>
+            <Image
+              src="/nacos.png"
+              alt="NACOS Logo"
+              width={40}
+              height={40}
+              className="w-11 h-11 rounded-xl bg-linear-to-br from-[#28a228] to-[#72d872] flex items-center justify-center font-bold text-white text-base"
+            />
+            <div className="text-white text-xl font-bold tracking-tight">NAC<span className="text-[#72d872]">OS</span> Unijos</div>
           </div>
 
           <h2 className="text-white text-[2.8rem] font-bold leading-[1.1] tracking-[-0.03em] mb-5">
@@ -111,12 +118,12 @@ const NacosLogin: React.FC = () => {
             Here.
           </h2>
           <p className="text-white/55 text-base leading-relaxed max-w-90">
-            Log in to access study materials, view your results, track events, and connect with thousands of CS students across Nigeria.
+            Log in to access study materials, view your results, track events, and connect with thousands of CS students across Unijos.
           </p>
 
           <div className="flex flex-col gap-3 mt-10">
             {[
-              { icon: <BookOpen color='#72d872'/>, text: 'Access 200+ study materials by level' },
+              { icon: <BookOpen color='#72d872' />, text: 'Access 200+ study materials by level' },
               { icon: <BarChart3 color='#72d872' />, text: 'View your semester results & GPA tracker' },
               { icon: <CalendarDays color='#72d872' />, text: 'Register for events, workshops & hackathons' },
               { icon: <Bell color='#72d872' />, text: 'Get real-time updates & exam notifications' },
@@ -132,7 +139,7 @@ const NacosLogin: React.FC = () => {
 
         <div className="relative z-10">
           <p className="text-white/30 text-[0.78rem]">
-            © 2026 NACOS Nigeria · <a href="nacos_main.html" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Visit Website</a> · <a href="#" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Privacy</a> · <a href="#" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Support</a>
+            © 2026 NACOS Unijos · <a href="nacos_main.html" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Visit Website</a> · <a href="#" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Privacy</a> · <a href="#" className="text-white/50 hover:text-[#72d872] no-underline hover:underline">Support</a>
           </p>
         </div>
       </div>
@@ -148,8 +155,8 @@ const NacosLogin: React.FC = () => {
               {activeTab === 'login' ? 'Welcome back' : 'Join NACOS'}
             </h1>
             <p className="text-[0.9rem] text-[#6a8a6a]">
-              {activeTab === 'login' 
-                ? 'Sign in to your Admin dashboard · ' 
+              {activeTab === 'login'
+                ? 'Sign in to your Admin dashboard · '
                 : 'Create your student account · '}
               <a href="nacos_main.html" className="text-[#1e7a1e] font-semibold no-underline hover:underline">← Back to website</a>
             </p>
@@ -159,13 +166,12 @@ const NacosLogin: React.FC = () => {
           <div className="flex bg-[#edfafa] rounded-full p-1 mb-8 border border-[#d4f7d4]">
             <button
               onClick={() => setActiveTab('login')}
-              className={`flex-1 py-2 rounded-full text-[0.85rem] font-semibold transition-all cursor-pointer ${
-                activeTab === 'login' 
-                  ? 'bg-white text-[#165716] shadow-sm' 
+              className={`flex-1 py-2 rounded-full text-[0.85rem] font-semibold transition-all cursor-pointer ${activeTab === 'login'
+                  ? 'bg-white text-[#165716] shadow-sm'
                   : 'bg-transparent text-[#6a8a6a]'
-              } flex justify-center items-center gap-5`}
+                } flex justify-center items-center gap-5`}
             >
-                <LogIn/>
+              <LogIn />
               Sign In
             </button>
             {/* <button
@@ -213,14 +219,14 @@ const NacosLogin: React.FC = () => {
                 </div>
               </div>
 
-              
+
 
               <div className="text-right -mt-2 mb-4">
                 <a href="/pages/login/reset-password" className="text-[0.8rem] font-semibold text-[#1e7a1e] no-underline hover:underline">Forgot password?</a>
               </div>
 
               <button type="submit" className="w-full py-3 rounded-xl bg-[#061306] text-white text-[0.95rem] font-bold border-none cursor-pointer hover:bg-[#165716] transition-all hover:-translate-y-px hover:shadow-lg hover:shadow-[#1e7a1e]/25 mt-2 flex justify-center items-center">
-               {loading ? <Loader className='animate-spin'></Loader> : 'Sign In to Dashboard →'}
+                {loading ? <Loader className='animate-spin'></Loader> : 'Sign In to Dashboard →'}
               </button>
 
               <div className="flex items-center gap-3 my-6 text-[#b0c4b0] text-[0.8rem]">
@@ -306,19 +312,19 @@ const NacosLogin: React.FC = () => {
                     ))}
                   </select>
                 </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[0.78rem] font-bold text-[#3a5a3a] tracking-wide">Institution</label>
-                <select
-                  value={signupInstitution}
-                  onChange={(e) => setSignupInstitution(e.target.value)}
-                  className="px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all"
-                >
-                  <option value="">Select…</option>
-                  {institutionOptions.map((inst, idx) => (
-                    <option key={idx}>{inst}</option>
-                  ))}
-                </select>
-              </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[0.78rem] font-bold text-[#3a5a3a] tracking-wide">Institution</label>
+                  <select
+                    value={signupInstitution}
+                    onChange={(e) => setSignupInstitution(e.target.value)}
+                    className="px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all"
+                  >
+                    <option value="">Select…</option>
+                    {institutionOptions.map((inst, idx) => (
+                      <option key={idx}>{inst}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="flex flex-col gap-1.5 mb-3">
@@ -345,11 +351,10 @@ const NacosLogin: React.FC = () => {
                   {[1, 2, 3, 4].map((bar) => (
                     <div
                       key={bar}
-                      className={`h-0.75 flex-1 rounded transition-all ${
-                        bar <= pwStrength.score
+                      className={`h-0.75 flex-1 rounded transition-all ${bar <= pwStrength.score
                           ? pwStrength.score === 1 ? 'bg-[#e74c3c]' : pwStrength.score === 2 ? 'bg-[#f39c12]' : pwStrength.score === 3 ? 'bg-[#28a228]' : 'bg-[#3cc43c]'
                           : 'bg-[#e2efe2]'
-                      }`}
+                        }`}
                     />
                   ))}
                 </div>

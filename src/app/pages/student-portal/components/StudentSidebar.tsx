@@ -147,9 +147,9 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="absolute inset-0 bg-[#22b864]/40 rounded-2xl blur-xl animate-pulse"></div>
-              <div className="relative flex items-center justify-center w-11 h-11 bg-linear-to-br from-[#22b864] to-[#4fd68a] text-[#042b12] rounded-xl shadow-lg border border-[#88e8b0]/30">
-                <Leaf className="w-5 h-5" />
-              </div>
+              <img  src="/nacos.png" className="relative flex items-center justify-center w-11 h-11 bg-linear-to-br from-[#22b864] to-[#4fd68a] text-[#042b12] rounded-xl shadow-lg border border-[#88e8b0]/30">
+                
+              </img>
             </div>
             <div className="flex flex-col">
               <h1 className="text-white font-extrabold text-2xl tracking-tight font-serif leading-none">

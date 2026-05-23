@@ -1087,7 +1087,7 @@ useEffect(() => {
         <div className="p-6 border-b border-emerald-800/50 relative">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] border border-white/20 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-              <img src='/nacos.jpg' className='w-full h-full bg-cover bg-center rounded-full object-cover'></img>
+              <img src='/nacos.png' className='w-full h-full bg-cover bg-center rounded-full object-cover'></img>
             </div>
             <div>
               <div className="font-serif text-white text-xl">NacosHub</div>

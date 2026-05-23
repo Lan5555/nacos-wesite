@@ -115,7 +115,7 @@ const Hero: React.FC<HeroProps> = ({ sharedData, isLoading }) => {
             custom={0.1}
           >
             <span>🌿</span>
-            <span>Nigeria&apos;s Premier CS Student Body</span>
+            <span>Unijos&apos;s Premier CS Student Body</span>
           </motion.div>
 
           <motion.h1
@@ -136,7 +136,7 @@ const Hero: React.FC<HeroProps> = ({ sharedData, isLoading }) => {
             variants={fadeUp}
             custom={0.3}
           >
-            NACOS unites Computer Science students across 48 institutions —
+            NACOS unites Computer Science students across University of Jos —
             providing resources, community, and career pathways for
             tomorrow&apos;s innovators.
           </motion.p>
@@ -152,7 +152,7 @@ const Hero: React.FC<HeroProps> = ({ sharedData, isLoading }) => {
 
           }}>Access Dashboard →</button>
           
-            <button className={styles.ctaSecondary} id="about" >Learn About NACOS</button>
+            <a href="#about" className={styles.ctaSecondary} id="about" >Learn About NACOS</a>
           </motion.div>
 
           <motion.div

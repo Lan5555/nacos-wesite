@@ -9,6 +9,7 @@ import Excos from "./Excos/Excos";
 import Updates from "./Updates/Updates";
 import Results from "./Results/Results";
 import Events from "./Events/Events";
+import Developers from "./Developers/Developers";
 import Contact from "./Contact/Contact";
 import Footer from "./Footer/Footer"
 
@@ -27,6 +28,7 @@ const HomePage: React.FC = () => {
       <Results />
       <Events />
       <Contact />
+      <Developers />
       <Footer/>
     </main>
   );
