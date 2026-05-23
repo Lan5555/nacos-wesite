@@ -655,7 +655,7 @@ const AdminGameManagement: React.FC = () => {
         />
         <StatsCard
           title="Avg Rating"
-          value={stats.averageRating.toFixed(1)}
+          value={isNaN(stats.averageRating) ? "0.0" : stats.averageRating.toFixed(1)}
           icon={<Star className="w-4 h-4" />}
           color="yellow"
         />

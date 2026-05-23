@@ -41,7 +41,8 @@ import {
   Download,
   ChartBar,
   Cog,
-  Gamepad
+  Gamepad,
+  ShoppingBag
 } from 'lucide-react';
 import Validator from '@/app/validators/auth-validator';
 import { Exco, ExcosManagement } from './manage-excos/manage-excos';
@@ -53,6 +54,7 @@ import ResultsManagement from './manage-results/manage-results';
 import AdminSettings from './settings/settings';
 import CoreService from '@/app/hooks/core-service';
 import AdminGameManagement from './manage-games/manage-games';
+import ManageMarketplace from './manage-marketplace/manage-marketplace';
 
 // --- Types ---
 type Student = {
@@ -439,8 +441,6 @@ const fetchStaff = async () => {
         }));
 
       setStaff(formattedStaff);
-    } else {
-      showToast(res.message);
     }
   } catch (e) {
     console.log(e);
@@ -1035,12 +1035,14 @@ useEffect(() => {
     { id: 'staff', label: 'Staff Directory', icon: <UserCheck size={18} />, permission: 'manage_staff' },
     { id: 'finance', label: 'Finance & Dues', icon: <Coins size={18} />, permission: 'manage_finance' },
     { id: 'events', label: 'Events', icon: <CalendarCheck size={18} />, badge: true, permission: 'manage_events' },
+    { id: 'games', label: 'Games', icon: <Gamepad  size={18} />, permission: 'manage_games' },
+    { id: 'marketplace', label: 'Marketplace', icon: <ShoppingBag size={18} />, permission: 'manage_market'},
     { id: 'settings', label: 'Settings', icon: <Cog size={18} />, permission: 'manage_settings' },
-    { id: 'games', label: 'Games', icon: <Gamepad  size={18} />, permission: 'manage_games' }
   ];
 
   const filteredNavItems = navItems.filter(item => {
     const userPermissions = adminData.permissions || [];
+    if (item.id === 'marketplace') return (adminData.adminLevel ?? 0) >= 3;
     if (userPermissions.includes('all')) return true;
     if (item.id === 'overview') return true; // Always show overview
     return userPermissions.includes(item.permission);
@@ -1056,6 +1058,7 @@ useEffect(() => {
     results: ['Results', 'Upload results for the respective session'],
     excos: ['Excos', 'Manage Available Excos'],
     courses: ['Courses', 'Manage courses'],
+    marketplace: ['Marketplace', 'Manage Marketplace'],
     settings: ['Settings', 'Admin Settings']
   };
 
@@ -1093,7 +1096,7 @@ useEffect(() => {
           </div>
           <div className="inline-flex items-center gap-1 mt-3 bg-white/5 rounded-full px-3 py-1 border border-white/10">
             <Shield size={10} className="text-slate-400" />
-            <span className="text-[10px] font-semibold text-slate-300 uppercase">{(adminData.adminLevel ?? 0) > 0 ? `Super Admin · Level ${adminData.adminLevel}` : "Admin · Level 1"}</span>
+            <span className="text-[10px] font-semibold text-slate-300 uppercase">{(adminData.adminLevel ?? 0) === 3 ? "Ultimate Admin" : (adminData.adminLevel ?? 0) > 0 ? `Super Admin · Level ${adminData.adminLevel}` : "Admin · Level 1"}</span>
           </div>
         </div>
 
@@ -1388,6 +1391,7 @@ useEffect(() => {
         {activeSection === 'results' && (<ResultsManagement/>)}
         {activeSection === 'settings' && (<AdminSettings/>)}
         {activeSection === 'games' && (<AdminGameManagement/>)}
+        {activeSection === 'marketplace' && (<ManageMarketplace/>)}
       </main>
 
       {/* Modals */}

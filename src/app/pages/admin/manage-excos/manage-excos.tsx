@@ -428,8 +428,8 @@ export const ExcosManagement:React.FC<Props> = ({activeExco}) => {
       );
     }
 
-    // Filter to show only the signed-in exco
-    if (activeExco?.id) {
+    // Filter to show only the signed-in exco unless they are level 3 (Ultimate Admin)
+    if (activeExco?.id && (activeExco.adminLevel ?? 0) < 3) {
       result = result.filter(exco => exco.id === activeExco.id);
     }
 

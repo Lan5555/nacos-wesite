@@ -16,6 +16,7 @@ interface MerchItem {
   stock: number;
   sellerName: string;
   sellerPhone: string;
+  image?: string;
   createdAt: string;
 }
 
@@ -94,23 +95,17 @@ const MerchResources: React.FC = () => {
     } finally {
       if (isInitial) setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, merchItems.length]);
 
   useEffect(() => {
-    fetchMerchList();
-  }, [fetchMerchList]);
+    if (merchItems.length === 0) fetchMerchList();
+  }, [fetchMerchList, merchItems.length]);
 
   const handleAddToCart = (item: MerchItem) => {
     setLoadingItemId(item.id.toString());
     setTimeout(() => {
-      addToCart(item.name, item.price);
-      setCart(prev => {
-        const existing = prev.find(i => i.id === item.id);
-        if (existing) {
-          return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
-        }
-        return [...prev, { ...item, quantity: 1 }];
-      });
+      // Only allow one product at a time in the cart
+      setCart([{ ...item, quantity: 1 }]);
       setLoadingItemId(null);
       setShowCart(true);
     }, 400);
@@ -118,13 +113,6 @@ const MerchResources: React.FC = () => {
 
   const removeFromCart = (id: number) => {
     setCart(prev => {
-      const itemToRemove = prev.find(i => i.id === id);
-      if (itemToRemove) {
-        // We need to update the global cart count in layout
-        // Since useStudent doesn't expose a 'setCartCount', we rely on the fact 
-        // that addToCart was used. For a full fix, layout.tsx would need a removeFromCart.
-        // For now, we just update local state.
-      }
       return prev.filter(item => item.id !== id);
     });
   };
@@ -139,17 +127,29 @@ const MerchResources: React.FC = () => {
     }));
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const handlePurchase = async () => {
+    const studentData = sessionStorage.getItem('student');
+    if (!studentData) return showToast("Please login to continue", "error");
+    const student = JSON.parse(studentData);
 
-  const handleCheckout = () => {
     setIsCheckingOut(true);
-    setTimeout(() => {
-      showToast("Order placed successfully!", "success");
-      setCart([]);
-      setShowCart(false);
+    try {
+      const res = await coreService.send(`marketplace/pay/${cart[0].id}`, {
+        email: student.email,
+        amount: cartTotal.toString()
+      });
+      if (res.success) {
+        window.location.href = res.data.link;
+      }
+    } catch (error) {
+      showToast("Payment initialization failed", "error");
+    } finally {
       setIsCheckingOut(false);
-    }, 2000);
-  };
+    }
+  }
+
+  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const localCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const getIconForProduct = (name: string) => {
     const lower = name.toLowerCase();
@@ -209,9 +209,9 @@ const MerchResources: React.FC = () => {
               className="relative p-2 bg-[#f2fbf6] rounded-xl border border-[#d8eedd] text-[#0f6e3f] hover:bg-[#e6faf0] transition-all"
             >
               <ShoppingCart className="w-5 h-5" />
-              {cartCount > 0 && (
+              {localCartCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#22b864] text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
-                  {cartCount}
+                  {localCartCount}
                 </span>
               )}
             </button>
@@ -239,42 +239,47 @@ const MerchResources: React.FC = () => {
               return (
                 <div
                   key={item.id}
-                  className="group bg-white border border-[#d8eedd] rounded-2xl p-5 flex flex-col justify-between hover:border-[#88e8b0] hover:shadow-md transition-all duration-300 relative overflow-hidden"
+                  className="group bg-white border border-[#d8eedd] rounded-2xl p-4 flex flex-col justify-between hover:border-[#88e8b0] hover:shadow-md transition-all duration-300 relative overflow-hidden h-full"
                   style={{ animationDelay: `${idx * 0.02}s`, animation: 'fadeUp 0.4s ease both' }}
                 >
                   {/* Decorative background element */}
-                  <div className="absolute -right-6 -top-6 w-24 h-24 bg-[#22b864]/5 rounded-full blur-xl group-hover:bg-[#22b864]/10 transition-colors"></div>
+                  <div className="absolute -right-6 -top-6 w-20 h-20 bg-[#22b864]/5 rounded-full blur-xl group-hover:bg-[#22b864]/10 transition-colors"></div>
 
                   {/* Top Item details */}
                   <div>
-                    <div className="flex items-start justify-between">
-                      {/* Item Icon container */}
-                      <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#e6faf0] to-[#c0f4d5] border border-[#88e8b0] flex items-center justify-center text-[#0f6e3f] shadow-sm group-hover:scale-110 transition-transform duration-300">
+                    <div className="flex flex-col gap-4">
+                      {item.image ? (
+                        <div className="w-full h-48 rounded-xl overflow-hidden border border-[#d8eedd] shadow-sm group-hover:shadow-md transition-all duration-300">
+                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                      <div className="w-full h-48 rounded-xl bg-linear-to-br from-[#e6faf0] to-[#c0f4d5] border border-[#d8eedd] flex items-center justify-center text-[#0f6e3f] shadow-sm">
                         <ItemIcon className="w-5 h-5" />
                       </div>
-
-                      {/* Category tag badge */}
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-tight border shadow-sm bg-[#e6faf0] text-[#0f6e3f] border-[#c0f4d5]`}>
-                        {item.stock} in stock
-                      </span>
+                      )}
                     </div>
 
-                    <h4 className="text-base font-bold text-[#071a0d] font-sans mt-4 leading-tight group-hover:text-[#0f6e3f] transition-colors">
-                      {item.name}
-                    </h4>
+                    <div className="flex items-start justify-between mt-4">
+                      <h4 className="text-sm font-bold text-[#071a0d] font-sans leading-tight group-hover:text-[#0f6e3f] transition-colors line-clamp-1">
+                        {item.name}
+                      </h4>
+                      <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-tight border shadow-sm bg-[#e6faf0] text-[#0f6e3f] border-[#c0f4d5] whitespace-nowrap ml-2`}>
+                        {item.stock} left
+                      </span>
+                    </div>
                     
-                    <p className="text-xs text-[#6a9975] mt-1 line-clamp-2 h-8">
+                    <p className="text-[11px] text-[#6a9975] mt-1 line-clamp-2 leading-relaxed">
                       {item.description}
                     </p>
                     
-                    <div className="flex items-baseline gap-1 mt-4">
+                    <div className="flex items-baseline gap-1 mt-3">
                       <span className="text-xs font-bold text-[#22b864]">₦</span>
-                      <span className="text-2xl font-black text-[#071a0d] font-serif tracking-tight">
+                      <span className="text-xl font-black text-[#071a0d] font-serif tracking-tight">
                         {item.price.toLocaleString()}
                       </span>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-[#f2fbf6] flex flex-col gap-2">
+                    <div className="mt-3 pt-3 border-t border-[#f2fbf6] flex flex-col gap-2">
                       <div className="flex items-center gap-2 text-[10px] text-[#6a9975]">
                         <User className="w-3 h-3" />
                         <span className="font-medium">{item.sellerName}</span>
@@ -286,7 +291,7 @@ const MerchResources: React.FC = () => {
                   <button
                     onClick={() => handleAddToCart(item)}
                     disabled={isLoading}
-                    className={`mt-5 w-full py-3 bg-linear-to-r from-[#0a4a20] to-[#0f6e3f] text-[#e6faf0] hover:from-[#0f6e3f] hover:to-[#169150] text-[11px] font-bold uppercase tracking-wider rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
+                    className={`mt-4 w-full py-2.5 bg-linear-to-r from-[#0a4a20] to-[#0f6e3f] text-[#e6faf0] hover:from-[#0f6e3f] hover:to-[#169150] text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
                       isLoading ? "opacity-75 cursor-wait active:scale-100" : "hover:shadow-md"
                     }`}
                   >
@@ -314,9 +319,15 @@ const MerchResources: React.FC = () => {
                     style={{ animationDelay: `${idx * 0.02}s`, animation: 'fadeUp 0.4s ease both' }}
                   >
                     <div className="flex items-center gap-4 w-full sm:w-auto">
-                      <div className="w-12 h-12 rounded-xl bg-[#e6faf0] flex items-center justify-center text-[#0f6e3f] shrink-0">
+                      {item.image ? (
+                        <div className="w-12 h-12 rounded-xl overflow-hidden border border-[#d8eedd] shrink-0">
+                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded-xl bg-[#e6faf0] flex items-center justify-center text-[#0f6e3f] shrink-0">
                         <ItemIcon className="w-5 h-5" />
                       </div>
+                      )}
                       <div className="flex flex-col">
                         <h4 className="text-sm font-bold text-[#071a0d] group-hover:text-[#0f6e3f] transition-colors">
                           {item.name}
@@ -364,7 +375,7 @@ const MerchResources: React.FC = () => {
               <span><i className="fas fa-truck mr-1"></i> Campus-wide delivery available</span>
               <span><i className="fas fa-credit-card mr-1"></i> Secure checkout</span>
             </div>
-            <span className="font-mono text-[10px]">🛒 {cartCount} items in cart · ₦{cartTotal.toLocaleString()}</span>
+            <span className="font-mono text-[10px]">🛒 {localCartCount} items in cart · ₦{cartTotal.toLocaleString()}</span>
           </div>
         </div>
 
@@ -445,7 +456,7 @@ const MerchResources: React.FC = () => {
                   </div>
                 </div>
                 <button 
-                  onClick={handleCheckout}
+                  onClick={handlePurchase}
                   disabled={isCheckingOut}
                   className="w-full py-4 bg-linear-to-r from-[#0a4a20] to-[#0f6e3f] text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:shadow-lg transition-all disabled:opacity-70"
                 >
