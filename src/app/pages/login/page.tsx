@@ -27,7 +27,7 @@ const NacosLogin: React.FC = () => {
   const [matricNumber, setMatricNumber] = useState('');
   const [universityEmail, setUniversityEmail] = useState('');
   const [signupLevel, setSignupLevel] = useState('');
-  const [signupInstitution, setSignupInstitution] = useState('');
+  const [signupInstitution, setSignupInstitution] = useState('University of Jos');
   const [signupPw, setSignupPw] = useState('');
   const [showSignupPw, setShowSignupPw] = useState(false);
   const [pwStrength, setPwStrength] = useState({ score: 0, text: 'Enter a password', color: '#6a8a6a' });
@@ -39,13 +39,14 @@ const NacosLogin: React.FC = () => {
     'University of Ibadan',
     'Ahmadu Bello University',
     'Federal University of Technology Akure',
+    'University of Jos',
     'University of Benin',
     'University of Port Harcourt',
     'Other'
   ];
 
   const levelOptions = ['100 Level', '200 Level', '300 Level', '400 Level', '500 Level'];
-  const institutionOptions = ['UNN', 'UNILAG', 'OAU', 'UI', 'ABU', 'FUTA', 'UNIBEN', 'UNIPORT', 'Other'];
+  const institutionOptions = ['University of Jos', 'UNN', 'UNILAG', 'OAU', 'UI', 'ABU', 'FUTA', 'UNIBEN', 'UNIPORT', 'Other'];
 
   const checkStrength = (pw: string) => {
     let score = 0;
@@ -352,6 +353,7 @@ const NacosLogin: React.FC = () => {
                 <select
                   value={signupInstitution}
                   onChange={(e) => setSignupInstitution(e.target.value)}
+                  disabled
                   className="px-3.5 py-3 rounded-xl border-2 border-[#e2efe2] bg-white text-[0.9rem] text-[#0e2a0e] outline-none focus:border-[#28a228] focus:ring-4 focus:ring-[#28a228]/10 transition-all"
                 >
                   <option value="">Select…</option>
