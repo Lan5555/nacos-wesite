@@ -113,7 +113,7 @@ export type StudentData = {
   mat_no: string;
   name: string;
   email: string;
-  department: string;
+  department?: string;
   level: string;
   phone: string;
   isAdmin: boolean;
@@ -121,26 +121,6 @@ export type StudentData = {
 
 const service:CoreService = new CoreService();
 // --- Initial Data ---
-const initialStudents: Student[] = [
-  { id: '1', matric: "NAC/CS/2101", name: "Ada Eze", level: 400, dept: "Computer Science", isRep: false },
-  { id: '2', matric: "NAC/CS/2102", name: "Chidi Obi", level: 300, dept: "Computer Science", isRep: true },
-  { id: '3', matric: "NAC/EE/2105", name: "Bola Yusuf", level: 400, dept: "Electrical Eng", isRep: false },
-  { id: '4', matric: "NAC/CS/2108", name: "Ifeanyi Nwosu", level: 400, dept: "Computer Science", isRep: true },
-];
-
-const initialReps: Rep[] = [
-  { id: 1, name: "Chidi Obi", dept: "Computer Science", level: 300, contact: "chidi@nacos.edu", status: "Active" },
-  { id: 2, name: "Ifeanyi Nwosu", dept: "Computer Science", level: 400, contact: "ifeanyi@nacos.edu", status: "Active" },
-  { id: 3, name: "Fatima Bello", dept: "Mass Comm", level: 300, contact: "fatima@nacos.edu", status: "Active" },
-];
-
-const initialActivityLog: ActivityLogEntry[] = [
-  { id: '1', adminId: '1', adminName: 'Dr. Okonkwo', action: 'Budget Review', timestamp: '2024-01-15T08:30:00', details: 'Rep Chidi Obi requested event budget review' },
-  { id: '2', adminId: '2', adminName: 'Prof. Adeyemi', action: 'Merch Approval', timestamp: '2024-01-14T16:20:00', details: 'Staff Dr. Okonkwo approved new merch design' },
-  { id: '3', adminId: '1', adminName: 'Dr. Okonkwo', action: 'Payment Recorded', timestamp: '2024-01-14T10:15:00', details: 'Dues payment of ₦15,000 from 400L student' },
-  { id: '4', adminId: '3', adminName: 'Mrs. Eze', action: 'Meeting Scheduled', timestamp: '2024-01-13T14:00:00', details: 'Meeting with reps scheduled for Friday' }
-];
-
 // --- Helper Functions ---
 const formatDate = () => {
   return new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -223,8 +203,8 @@ const AdminPage: React.FC = () => {
   const [financeTypeFilter, setFinanceTypeFilter] = useState('all');
   
   // Data States
-  const [students, setStudents] = useState<Student[]>(initialStudents);
-  const [reps, setReps] = useState<Rep[]>(initialReps);
+  const [students, setStudents] = useState<StudentData[]>([]);
+  const [reps, setReps] = useState<StudentData[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
   const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
@@ -232,8 +212,16 @@ const AdminPage: React.FC = () => {
   const [events, setEvents] = useState<AdminEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+  const [financeStats, setFinanceStats] = useState({
+    collectedAmount: 0,
+    targetAmount: 1
+  });
   const [adminData, setAdminData] = useState<Partial<Exco>>({});
   const [fetchAmount, setFetchAmount] = useState<Record<string,number>>({
+    take: 10,
+    skip: 0
+  });
+  const [financeFetchAmount, setFinanceFetchAmount] = useState<Record<string, number>>({
     take: 10,
     skip: 0
   });
@@ -264,7 +252,7 @@ const AdminPage: React.FC = () => {
       adminId: adminData.id || 'system',
       adminName: adminData.name || 'System',
       action,
-      details,
+      details: details || '',
       timestamp: new Date().toISOString(),
     };
     setActivityLog(prev => [newLog, ...prev.slice(0, 49)]);
@@ -312,16 +300,7 @@ const AdminPage: React.FC = () => {
         if(res.success){
       
       setStudents(prev => prev.map(s => s.id === student.id ? { ...s, isAdmin: true } : s));
-      const newRep: StudentData = {
-        id: student.id,
-        mat_no: student.mat_no,
-        name: student.name,
-        department: student.department,
-        level:student.level,
-        isAdmin: true,
-        email: student.email,
-        phone: student.phone
-      };
+      const newRep: StudentData = { ...student, isAdmin: true };
       
       setReps(prev => [...prev, newRep]);
       addLog('Appoint Rep', `Appointed ${student.name} as Departmental Rep`);
@@ -339,7 +318,7 @@ const AdminPage: React.FC = () => {
   const handleDismissRep = async (rep: StudentData) => {
     try {
       setIsSubmitting(true);
-      const res = await service.delete(`admin/remove-rep?id=${rep.id}`);
+      const res = await service.get(`admin/remove-rep?id=${rep.id}`);
       if (res.success) {
         setReps(prev => prev.filter(r => r.id !== rep.id));
         setStudents(prev => prev.map(s => s.name === rep.name ? { ...s, isAdmin: false } : s));
@@ -479,7 +458,7 @@ const handleRemoveStaff = async (id: string) => {
       });
 
       if (res.success) {
-        await fetchStaff();
+        setStaff(prev => prev.filter(member => member.id !== id));
 
         showToast('Staff member removed');
 
@@ -496,6 +475,20 @@ const handleRemoveStaff = async (id: string) => {
   }
 };
 
+const fetchFinanceStats = async () => {
+  try {
+    const res = await service.get('dues/resources');
+    if (res.success && res.data) {
+      setFinanceStats({
+        collectedAmount: res.data.collectedAmount,
+        targetAmount: res.data.targetAmount
+      });
+    }
+  } catch (e) {
+    console.error('Failed to fetch finance stats', e);
+  }
+};
+
 useEffect(() => {
   loadAdminData();
   fetchActivityLogs();
@@ -503,6 +496,7 @@ useEffect(() => {
   fetchTransactions();
   fetchEvents();   // ← add
   fetchStaff();    // ← add
+  fetchFinanceStats();
 }, []);
 
 
@@ -575,11 +569,11 @@ const handleDeleteEvent = async (eventId: number) => {
   const handleDownloadFinanceReport = () => {
     const headers = ['Transaction ID', 'Description', 'Amount', 'Date', 'Paid By'];
     const rows = transactions.map(tx => [
-      tx.id,
-      tx.desc,
+      tx.transaction_id,
+      tx.description,
       tx.amount.replace('₦', ''),
       tx.date,
-      tx.paidBy
+      tx.paid_by
     ]);
 
     const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
@@ -602,10 +596,10 @@ const handleDeleteEvent = async (eventId: number) => {
     }
   }
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = async (take?: number, skip?: number) => {
   setTransactionsLoading(true);
   try {
-    const res = await service.get('dues/find-all');
+    const res = await service.get(`dues/find-all?take=${take || 10}&skip=${skip || 0}`);
     if (res.success) {
       setTransactions(res.data ?? []);
     } else {
@@ -622,8 +616,9 @@ useEffect(() => {
   loadAdminData();
   fetchActivityLogs();
   cleanupOldActivityLogs();
-  fetchTransactions(); // ← add this
-}, []);
+  fetchTransactions(financeFetchAmount.take, financeFetchAmount.skip);
+  fetchFinanceStats();
+}, [financeFetchAmount]);
 
   const fetchActivityLogs = async() => {
     setLogsLoading(true);
@@ -662,7 +657,7 @@ useEffect(() => {
       const res = await service.get(`users/find-one-user?mat_no=${mat_no}`);
       if(res.success){
           showToast(res.message);
-          setStudent(res.data);
+          setStudents(res.data);
       }else{
         showToast(res.message);
       }
@@ -748,7 +743,7 @@ useEffect(() => {
         <tbody className="divide-y divide-slate-200 bg-white">
           {students.filter(s => {
             const matchesSearch = s.name.toLowerCase().includes(studentSearch.toLowerCase()) || s.mat_no.toLowerCase().includes(studentSearch.toLowerCase());
-            const matchesLevel = studentLevelFilter === 'all' || s.level === studentLevelFilter;
+            const matchesLevel = studentLevelFilter === 'all' || s.level.toString() === studentLevelFilter;
             const matchesDept = studentDeptFilter === 'all' || s.department === studentDeptFilter;
             return matchesSearch && matchesLevel && matchesDept;
           }).map((student, idx) => (
@@ -1065,9 +1060,8 @@ useEffect(() => {
   };
 
   // Stats
-  const totalCollected = 2480000;
-  const totalTarget = 3200000;
-  const progress = (totalCollected / totalTarget) * 100;
+  const progress = (financeStats.collectedAmount / financeStats.targetAmount) * 100;
+  const remainingAmount = Math.max(0, financeStats.targetAmount - financeStats.collectedAmount);
 
   return (
     <div className="min-h-screen bg-linear-to-br from-emerald-50/40 to-white relative">
@@ -1168,7 +1162,7 @@ useEffect(() => {
               <StatCard icon={<GraduationCap size={20} />} label="Total Students" value="486" sub="▲ 12 this semester" iconBg="bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white" delay={0.05} />
               <StatCard icon={<UserCog size={20} />} label="Dept. Reps" value="8" sub="Across 6 depts" iconBg="bg-slate-100 text-slate-900" delay={0.1} />
               <StatCard icon={<Hourglass size={20} />} label="Pending Approvals" value="3" sub="Awaiting action" iconBg="bg-amber-100 text-amber-600" delay={0.15} />
-              <StatCard icon={<Wallet size={20} />} label="Dues Collected" value="₦2.48M" sub="75% of target" iconBg="bg-blue-100 text-blue-600" delay={0.2} />
+              <StatCard icon={<Wallet size={20} />} label="Dues Collected" value={`₦${(financeStats.collectedAmount / 1000000).toFixed(2)}M`} sub={`${Math.round(progress)}% of target`} iconBg="bg-blue-100 text-blue-600" delay={0.2} />
             </div>
 
             <div className="grid lg:grid-cols-2 gap-5">
@@ -1323,14 +1317,44 @@ useEffect(() => {
               <div className="bg-emerald-50/50 rounded-xl p-5 border border-emerald-100 mt-4">
                 <div className="flex justify-between mb-2">
                   <span className="font-semibold text-emerald-800">Annual Dues Target Progress</span>
-                  <span className="font-mono text-emerald-600 font-bold">{Math.round(progress)}% — ₦2.48M of ₦3.2M</span>
+                  <span className="font-mono text-emerald-600 font-bold">{Math.round(progress)}% — ₦{financeStats.collectedAmount.toLocaleString()} of ₦{financeStats.targetAmount.toLocaleString()}</span>
                 </div>
                 <div className="h-2 bg-emerald-100 rounded-full overflow-hidden">
                   <div className="h-full bg-linear-to-r from-emerald-400 to-emerald-600 rounded-full" style={{ width: `${progress}%` }}></div>
                 </div>
                 <div className="flex justify-between mt-2 text-xs text-emerald-500">
-                  <span>₦2,480,000 collected</span>
-                  <span>₦720,000 remaining</span>
+                  <span>₦{financeStats.collectedAmount.toLocaleString()} collected</span>
+                  <span>₦{remainingAmount.toLocaleString()} remaining</span>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-emerald-100 p-5 mt-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Settings size={16} className="text-emerald-600" />
+                  <h3 className="font-serif text-emerald-900 text-sm">Target Settings</h3>
+                </div>
+                <div className="flex items-end gap-3">
+                  <div className="flex-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Annual Dues Target (₦)</label>
+                    <input 
+                      type="number" 
+                      placeholder="e.g. 2000000"
+                      className="w-full mt-1 px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter') {
+                          const val = (e.target as HTMLInputElement).value;
+                          try {
+                            const res = await service.patch(`misc-settings/update/dues_target`, { value: val });
+                            if (res.success) {
+                              showToast(`Target updated to ₦${Number(val).toLocaleString()}`);
+                              fetchFinanceStats();
+                            }
+                          } catch { showToast('Failed to update target'); }
+                        }
+                      }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 pb-2">Press Enter to save</p>
                 </div>
               </div>
             </div>
@@ -1412,24 +1436,24 @@ useEffect(() => {
               className="w-full pl-10 pr-4 py-2 rounded-xl border border-emerald-200 bg-emerald-50/30 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition" 
               placeholder="Enter Matric No (e.g. NAC/CS/2102)" 
             />
-            {repMatricSearch.length === 15 && !student && (
+            {repMatricSearch.length === 15 && !students.find(s => s.mat_no === repMatricSearch) && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
                 <RefreshCw className="w-4 h-4 text-emerald-600 animate-spin" />
               </div>
             )}
           </div>
 
-          {student && (
+          {students.length === 1 && (
             <div className="mt-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/30 animate-fade-up">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-bold text-slate-900">{student.name}</div>
-                  <div className="text-xs text-emerald-600 font-mono">{student.mat_no} • {student.department}</div>
-                  <div className="text-[10px] text-slate-500 mt-1">{student.email}</div>
+                  <div className="font-bold text-slate-900">{students[0].name}</div>
+                  <div className="text-xs text-emerald-600 font-mono">{students[0].mat_no} • {students[0].department}</div>
+                  <div className="text-[10px] text-slate-500 mt-1">{students[0].email}</div>
                 </div>
                 <button 
                   disabled={isSubmitting}
-                  onClick={() => handleAppointRepFromModal(student)}
+                  onClick={() => handleAppointRepFromModal(students[0])}
                   className="px-4 py-2 rounded-lg bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-xs font-bold hover:opacity-90 transition shadow-sm flex items-center gap-2"
                 >
                   {isSubmitting && <RefreshCw size={12} className="animate-spin" />}
