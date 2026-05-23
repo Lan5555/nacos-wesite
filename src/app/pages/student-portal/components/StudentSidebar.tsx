@@ -12,6 +12,8 @@ import {
   Leaf,
   Sparkles,
   X,
+  Brain,
+  Gamepad,
 } from "lucide-react";
 import StudentProfileCard, { StudentProfile } from "./StudentProfileCard";
 
@@ -78,7 +80,7 @@ interface StudentSidebarProps {
 }
 
 const StudentSidebar: React.FC<StudentSidebarProps> = ({
-  unreadNotificationsCount = 3,
+  unreadNotificationsCount,
   profile,
   activeSection = "dashboard",
   onSectionChange,
@@ -104,9 +106,19 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
 
   const activityNavItems = [
     {
+  id: "gpa-predictor",
+  icon: Brain,
+  label: "GPA Predictor",
+},
+    {
       id: "results",
       icon: GraduationCap,
       label: "Results",
+    },
+    {
+      id: "game-hub",
+      icon: Gamepad,
+      label: "Game Hub",
     },
     {
       id: "purchases",
@@ -122,7 +134,7 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
   ];
 
   return (
-    <aside className="w-72 min-h-screen bg-linear-to-br from-[#042b12] via-[#0a4a20] to-[#0f6e3f] flex flex-col justify-between p-5 shrink-0 border-r border-[#22b864]/15 relative z-40 shadow-2xl">
+    <aside className="w-64 min-h-screen bg-linear-to-br from-[#021409] via-[#042b12] to-[#0a4a20] flex flex-col justify-between p-5 shrink-0 border-r border-[#22b864]/10 relative z-40 shadow-2xl">
       
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 right-0 h-48 bg-linear-to-b from-[#22b864]/8 to-transparent pointer-events-none"></div>
@@ -134,7 +146,7 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
         <div className="flex items-center justify-between gap-3 mb-8 mt-1 px-1 select-none">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="absolute inset-0 bg-[#22b864]/30 rounded-2xl blur-md animate-pulse"></div>
+              <div className="absolute inset-0 bg-[#22b864]/40 rounded-2xl blur-xl animate-pulse"></div>
               <div className="relative flex items-center justify-center w-11 h-11 bg-linear-to-br from-[#22b864] to-[#4fd68a] text-[#042b12] rounded-xl shadow-lg border border-[#88e8b0]/30">
                 <Leaf className="w-5 h-5" />
               </div>
@@ -142,7 +154,7 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
             <div className="flex flex-col">
               <h1 className="text-white font-extrabold text-2xl tracking-tight font-serif leading-none">
                 NacosHub
-              </h1>
+                <span className="inline-block w-1 h-1 rounded-full bg-[#4fd68a] ml-0.5 shadow-[0_0_8px_#4fd68a]"></span></h1>
               <span className="text-[#4fd68a] text-[9px] font-bold tracking-[0.25em] uppercase mt-1.5">
                 STUDENT PORTAL
               </span>
@@ -200,7 +212,8 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
           </div>
 
           {/* Decorative Quick Tip */}
-          <div className="mt-8 mx-2 p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+          <div className="mt-8 mx-2 p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm relative overflow-hidden group">
+            <div className="absolute -right-4 -top-4 w-12 h-12 bg-[#22b864]/10 rounded-full blur-xl group-hover:bg-[#22b864]/20 transition-colors"></div>
             <div className="flex items-center gap-2">
               <Sparkles className="w-3.5 h-3.5 text-[#4fd68a]" />
               <span className="text-[10px] text-white/60 font-medium">Quick Tip</span>

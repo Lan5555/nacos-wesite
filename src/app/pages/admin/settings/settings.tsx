@@ -65,7 +65,7 @@ const initialActivityLogs: ActivityLog[] = [
 
 // Permission options
 const allPermissions = [
-  'manage_students', 'manage_events', 'manage_finance', 'manage_excos', 'manage_courses', 'manage_settings', 'manage_department', 'manage_results'
+  'manage_students', 'manage_events', 'manage_finance', 'manage_excos', 'manage_courses', 'manage_settings', 'manage_department', 'manage_results', 'manage_games'
 ];
 
 const permissionLabels: Record<string, string> = {
@@ -76,7 +76,8 @@ const permissionLabels: Record<string, string> = {
   manage_settings: 'Manage Settings',
   manage_courses: 'Manage Courses',
   manage_department: 'Manage Department',
-  manage_results: 'Manage Results'
+  manage_results: 'Manage Results',
+  manage_games: 'Manage Games'
 };
 const service:CoreService = new CoreService();
 

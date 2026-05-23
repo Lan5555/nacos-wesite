@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Star, CheckCircle, Download, Zap, MapPin, Clock, MonitorPlay, TrendingUp, GraduationCap, BookOpen, ShoppingBag, FileText, Bell } from "lucide-react";
-import { motion, Variants } from "framer-motion";
+import React, { useEffect, useState, useMemo } from "react";
+import { Star, CheckCircle, Download, Zap, MapPin, Clock, MonitorPlay, TrendingUp, GraduationCap, BookOpen, ShoppingBag, FileText, Bell, Loader2, Lightbulb, Sparkles } from "lucide-react";
+import { AnimatePresence, motion, Variants } from "framer-motion";
 import { useStudent } from "./layout";
 import MyCourses from "./courses/courses";
 import AcademicResults from "./results/results";
@@ -11,31 +11,10 @@ import PdfLibrary from "./pdf-library/pdf-library";
 import NotificationsPage from "./notifications/notifications";
 import Validator from "@/app/validators/auth-validator";
 import { useToast } from "@/app/providers/toast-provider";
-
-// ============================================================================
-// API INTEGRATION AND INTERFACES (COMMENTED OUT UNTIL BACKEND IS READY)
-// ============================================================================
-// import CoreService from "@/app/hooks/core-service";
-//
-// interface Lecture {
-//   time: string;
-//   title: string;
-//   location: string;
-// }
-//
-// interface AcademicProgress {
-//   subject: string;
-//   percentage: number;
-// }
-//
-// interface DashboardData {
-//   gpa: number;
-//   gpaDelta: string;
-//   downloadsCount: number;
-//   lectures: Lecture[];
-//   progress: AcademicProgress[];
-// }
-// ============================================================================
+import GPAPredictionEngine from "./gpa-prediction/gpa-prediction";
+import GameHub from "./game-hub/game-hub";
+import { useRouter } from "next/navigation";
+import CoreService from "@/app/hooks/core-service";
 
 // Custom StudentHeader component matching NacosHub aesthetic
 const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title, unreadCount }) => {
@@ -58,7 +37,7 @@ const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title
       <div className="flex items-center gap-3">
         <div className="relative">
           <div className="w-10 h-10 rounded-xl bg-white border border-[rgba(15,110,63,0.12)] flex items-center justify-center text-[#1e3d27] cursor-pointer hover:bg-[#e6faf0] transition-all shadow-sm">
-            <i className="fas fa-bell text-sm"></i>
+            <Bell className="w-4 h-4" />
           </div>
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#22b864] text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
@@ -66,28 +45,56 @@ const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3 bg-white border border-[rgba(15,110,63,0.12)] rounded-xl px-4 py-2 shadow-sm">
-          <i className="fas fa-search text-[#6a9975] text-sm"></i>
-          <input 
-            type="text" 
-            placeholder="Search dashboard..." 
-            className="bg-transparent border-none outline-none text-sm font-sans text-[#071a0d] placeholder:text-[#6a9975] w-36 sm:w-48"
-          />
+        <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#22b864] to-[#0f6e3f] flex items-center justify-center text-white shadow-lg shadow-[#22b864]/20 cursor-pointer hover:scale-105 transition-all">
+          <Sparkles className="w-4 h-4" />
+        </div>
+        <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-[#e6faf0] border border-[#c0f4d5] rounded-xl">
+          <div className="w-2 h-2 rounded-full bg-[#22b864] animate-pulse"></div>
+          <span className="text-xs font-bold text-[#0f6e3f] uppercase tracking-wider">
+            System Online
+          </span>
         </div>
       </div>
     </div>
   );
 };
 
+const coreService = new CoreService();
+
 const DashboardView: React.FC = () => {
-  const { creditsEarned = 24, activeCoursesCount = 5, unreadCount = 3, profile = { name: "Chiamaka M." } } = useStudent();
+  const { creditsEarned = 24, activeCoursesCount = 5, unreadCount = 3, profile, setActiveSection } = useStudent();
   const [loading, setLoading] = useState(false);
 
-  // Default hardcoded states matching design.
-  // DELETE / COMMENT these variables out once API fetching is enabled.
-  const [gpa] = useState(3.82);
-  const [gpaDelta] = useState("+0.04 this semester");
-  const [downloadsCount] = useState(18);
+  const [gpa] = useState(0.00);
+  const [gpaDelta] = useState("Pending results");
+  const [downloadsCount, setDownloadsCount] = useState(0);
+  const [registeredCredits, setRegisteredCredits] = useState(0);
+  const [recentPdfs, setRecentPdfs] = useState<any[]>([]);
+  const [facts, setFacts] = useState<{ category: string; content: string }[]>([
+    { category: "Loading", content: "Fetching interesting facts for you..." }
+  ]);
+
+  const [currentFactIndex, setCurrentFactIndex] = useState(0);
+
+  const fetchFacts = async () => {
+    try {
+      const response = await fetch('https://uselessfacts.jsph.pl/api/v2/facts/random');
+      const data = await response.json();
+      
+      setFacts([{
+        category: "Useless Fact",
+        content: data.text
+      }]);
+    } catch (error) {
+      console.error("Failed to fetch facts:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchFacts();
+    const factInterval = setInterval(fetchFacts, 15000); // Refresh fact from API every 15 seconds
+    return () => clearInterval(factInterval);
+  }, []);
 
   const [lectures] = useState([
     { time: "10:30 AM", title: "Advanced Software Engineering", location: "Room 204, Engineering Block" },
@@ -101,30 +108,37 @@ const DashboardView: React.FC = () => {
     { subject: "Machine Learning", percentage: 78 },
   ]);
 
-  // ============================================================================
-  // COMMENTED API CALL EXAMPLE: UNCOMMENT THIS BLOCK TO INTEGRATE YOUR BACKEND
-  // ============================================================================
-  // const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  //
-  // useEffect(() => {
-  //   const fetchDashboardData = async () => {
-  //     setLoading(true);
-  //     const service = new CoreService();
-  //     try {
-  //       // Example endpoint: GET content/v1/student-dashboard
-  //       const response = await service.get("content/v1/student-dashboard");
-  //       if (response.success && response.data) {
-  //         // setDashboardData(response.data);
-  //       }
-  //     } catch (error) {
-  //       console.error("Failed to load dashboard from API:", error);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-  //   fetchDashboardData();
-  // }, []);
-  // ============================================================================
+  // Logic to fetch actual available PDF count for the student
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!profile.level || !profile.department) return;
+      
+      try {
+        const res = await coreService.get(`courses/find-all-courses?level=${profile.level}&department=${profile.department}`);
+        if (res.success && Array.isArray(res.data)) {
+          // Count items that have a download URL
+          const availablePdfs = res.data.filter((c: any) => c.downloadUrl).length;
+          
+          // Calculate total credits for the level
+          const totalCredits = res.data.reduce((sum: number, c: any) => sum + (parseInt(c.credits) || 3), 0);
+          
+          setRegisteredCredits(totalCredits);
+          setDownloadsCount(availablePdfs);
+          setRecentPdfs(res.data.filter((c: any) => c.downloadUrl).slice(0, 3));
+        }
+      } catch (error) {
+        console.error("Dashboard stats fetch error:", error);
+      }
+    };
+    fetchStats();
+  }, [profile.level, profile.department]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentFactIndex((prev) => (prev + 1) % facts.length);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [facts.length]);
 
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -147,7 +161,7 @@ const DashboardView: React.FC = () => {
     return "Good evening";
   };
 
-  const firstName = profile.name?.split(' ')[0] || "Student";
+  const firstName = profile?.name?.split(' ')[0] || "Student";
 
   return (
     <motion.div 
@@ -165,18 +179,17 @@ const DashboardView: React.FC = () => {
         <motion.div variants={itemVariants} className="bg-white border border-[#d8eedd] rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all hover:-translate-y-1 group">
           <div className="flex flex-col">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a9975] mb-2">
-              Current GPA
+              Current Level
             </span>
             <span className="text-3xl font-bold text-[#071a0d] font-serif leading-none">
-              {gpa.toFixed(2)}
+              {profile.level || "---"}
             </span>
-            <span className="text-[11px] font-semibold text-[#22b864] flex items-center gap-1 mt-2">
-              <TrendingUp className="w-3 h-3" />
-              <span>{gpaDelta}</span>
+            <span className="text-[11px] font-semibold text-[#6a9975] mt-2">
+              {profile.department || "Undergraduate"}
             </span>
           </div>
           <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#0a4a20] to-[#0f6e3f] flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-            <Star className="w-5 h-5 fill-[#88e8b0] text-[#88e8b0]" />
+            <GraduationCap className="w-5 h-5 text-[#88e8b0]" />
           </div>
         </motion.div>
 
@@ -184,13 +197,13 @@ const DashboardView: React.FC = () => {
         <motion.div variants={itemVariants} className="bg-white border border-[#d8eedd] rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all hover:-translate-y-1 group">
           <div className="flex flex-col">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a9975] mb-2">
-              Credits Earned
+              Registered Units
             </span>
             <span className="text-3xl font-bold text-[#071a0d] font-serif leading-none">
-              {creditsEarned}
+              {registeredCredits}
             </span>
             <span className="text-[11px] font-semibold text-[#6a9975] mt-2">
-              of 30 this year
+              Current Semester
             </span>
           </div>
           <div className="w-12 h-12 rounded-xl bg-[#e6faf0] border border-[#c0f4d5] flex items-center justify-center text-[#0f6e3f] group-hover:scale-105 transition-transform">
@@ -205,13 +218,16 @@ const DashboardView: React.FC = () => {
               PDF Downloads
             </span>
             <span className="text-3xl font-bold text-[#071a0d] font-serif leading-none">
-              {downloadsCount}
+              {downloadsCount || 0}
             </span>
             <span className="text-[11px] font-semibold text-[#6a9975] mt-2">
-              From PDF library
+              Available for you
             </span>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-[#e6faf0] border border-[#c0f4d5] flex items-center justify-center text-[#0f6e3f] group-hover:scale-105 transition-transform">
+          <div 
+            onClick={() => setActiveSection('pdf-library')}
+            className="w-12 h-12 rounded-xl bg-[#e6faf0] border border-[#c0f4d5] flex items-center justify-center text-[#0f6e3f] group-hover:scale-105 transition-transform cursor-pointer"
+          >
             <Download className="w-5 h-5" />
           </div>
         </motion.div>
@@ -238,49 +254,88 @@ const DashboardView: React.FC = () => {
       {/* Main Grid: Lectures & Progress */}
       <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-start w-full">
         {/* Left Column: Today's Lectures */}
-        <div className="lg:col-span-2 bg-white border border-[#d8eedd] rounded-3xl shadow-sm overflow-hidden h-full flex flex-col">
+        <div className="lg:col-span-2 bg-white border border-[#d8eedd] rounded-3xl shadow-sm overflow-hidden h-full flex flex-col relative group min-h-[320px]">
+          {/* Animated Background Elements */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <motion.div 
+              animate={{ 
+                scale: [1, 1.2, 1],
+                rotate: [0, 90, 0],
+                opacity: [0.05, 0.1, 0.05] 
+              }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="absolute -top-20 -right-20 w-64 h-64 bg-[#22b864] rounded-full blur-3xl"
+            />
+            <motion.div 
+              animate={{ 
+                x: [-20, 20, -20],
+                y: [-20, 20, -20],
+              }}
+              transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute -bottom-10 -left-10 w-48 h-48 bg-[#e6faf0] rounded-full blur-2xl opacity-40"
+            />
+            
+            {/* Floating Particles */}
+            {[...Array(6)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-1.5 h-1.5 bg-[#22b864]/60 rounded-full shadow-[0_0_8px_rgba(34,184,100,0.4)]"
+                animate={{
+                  y: [0, -100],
+                  x: Math.sin(i) * 50,
+                  opacity: [0, 1, 0],
+                  scale: [0, 1.5, 0]
+                }}
+                transition={{
+                  duration: 4 + Math.random() * 4,
+                  repeat: Infinity,
+                  delay: i * 0.8,
+                  ease: "linear"
+                }}
+                style={{
+                  left: `${15 + i * 15}%`,
+                  bottom: "-10px"
+                }}
+              />
+            ))}
+          </div>
+
           <div className="flex items-center justify-between border-b border-[#d8eedd] p-5 md:px-6">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-[#e6faf0] flex items-center justify-center text-[#0f6e3f]">
-                <MonitorPlay className="w-4 h-4" />
+                <Lightbulb className="w-4 h-4" />
               </div>
               <h3 className="text-lg font-bold text-[#071a0d] font-serif">
-                Today's Lectures
+                Did You Know?
               </h3>
             </div>
-            <span className="text-xs font-semibold text-[#6a9975]">
-              {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-            </span>
+            <div className="flex gap-1">
+              {facts.map((_, i) => (
+                <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === currentFactIndex ? 'w-4 bg-[#22b864]' : 'w-1 bg-[#d8eedd]'}`} />
+              ))}
+            </div>
           </div>
 
-          <div className="p-5 md:p-6 space-y-4 flex-1">
-            {lectures.map((lecture, index) => (
-              <div
-                key={index}
-                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-[#f2fbf6]/50 border border-[#d8eedd] rounded-xl hover:bg-[#e6faf0] hover:border-[#88e8b0] transition-all gap-3"
-                style={{ animationDelay: `${index * 0.1}s`, animation: 'fadeUp 0.4s ease both' }}
+          <div className="p-8 md:p-12 flex-1 flex flex-col justify-center relative z-10">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentFactIndex}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.5 }}
+                className="flex flex-col gap-4"
               >
-                <div className="flex items-start gap-4">
-                  {/* Left Accent Bar */}
-                  <div className="w-1 h-10 bg-[#22b864] rounded-full self-center"></div>
-                  
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-[#22b864] flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {lecture.time}
-                    </span>
-                    <h4 className="text-sm md:text-base font-bold text-[#071a0d] font-sans mt-0.5">
-                      {lecture.title}
-                    </h4>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1 text-[11px] font-semibold text-[#3a6645] bg-white border border-[#d8eedd] px-3 py-1.5 rounded-full self-start sm:self-auto shadow-sm">
-                  <MapPin className="w-3 h-3 text-[#22b864]" />
-                  <span>{lecture.location}</span>
-                </div>
-              </div>
-            ))}
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#22b864] bg-[#e6faf0] px-3 py-1 rounded-full w-fit flex items-center gap-2">
+                  <Sparkles className="w-3 h-3" />
+                  {facts[currentFactIndex].category}
+                </span>
+                <p className="text-xl md:text-2xl lg:text-3xl font-serif text-[#071a0d] leading-relaxed italic relative">
+                  <span className="absolute -left-6 -top-2 text-4xl text-[#22b864]/20 font-serif">"</span>
+                  &ldquo;{facts[currentFactIndex].content}&rdquo;
+                </p>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
 
@@ -295,81 +350,68 @@ const DashboardView: React.FC = () => {
             </h3>
           </div>
 
-          {/* GPA Ring Gauge */}
-          <div className="flex items-center gap-6 mb-8 justify-center sm:justify-start">
-            <div className="relative w-24 h-24 flex items-center justify-center">
-              <svg className="w-full h-full transform -rotate-90">
-                <circle
-                  cx="48"
-                  cy="48"
-                  r="40"
-                  stroke="#e6faf0"
-                  strokeWidth="8"
-                  fill="transparent"
-                />
-                <circle
-                  cx="48"
-                  cy="48"
-                  r="40"
-                  stroke="#22b864"
-                  strokeWidth="8"
-                  fill="transparent"
-                  strokeDasharray="251.2"
-                  strokeDashoffset={251.2 - (251.2 * gpa) / 4.0}
-                  strokeLinecap="round"
-                  style={{ transition: "stroke-dashoffset 1s ease" }}
-                />
-              </svg>
-              <div className="absolute flex flex-col items-center">
-                <span className="text-xl font-extrabold text-[#071a0d] font-serif leading-none">
-                  {gpa.toFixed(2)}
-                </span>
-                <span className="text-[9px] font-bold text-[#6a9975] mt-0.5">
-                  / 4.0
-                </span>
-              </div>
+          {/* Recent PDF Resources List */}
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a9975]">
+                Recent Resources
+              </span>
+              <button 
+                onClick={() => setActiveSection('pdf-library')}
+                className="text-[10px] font-bold text-[#22b864] hover:underline"
+              >
+                View All
+              </button>
             </div>
-
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-[#6a9975] mb-0.5">
-                Standing
-              </span>
-              <span className="text-base font-extrabold text-[#22b864] tracking-wide">
-                First Class
-              </span>
-              <div className="flex items-center gap-1.5 mt-2 bg-[#f2fbf6] border border-[#d8eedd] px-2.5 py-1 rounded-lg">
-                <span className="text-[9px] font-bold text-[#6a9975] uppercase">Level</span>
-                <span className="text-[11px] font-bold text-[#071a0d]">400</span>
-              </div>
+            
+            <div className="flex flex-col gap-3">
+              {recentPdfs.length > 0 ? (
+                recentPdfs.map((pdf, idx) => (
+                  <div 
+                    key={pdf.id}
+                    onClick={() => window.open(pdf.downloadUrl, '_blank')}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-[#f2fbf6] border border-[#d8eedd] hover:border-[#22b864] transition-all cursor-pointer group"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-red-500 shadow-sm group-hover:scale-110 transition-transform">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs font-bold text-[#071a0d] truncate">{pdf.name}</h4>
+                      <p className="text-[10px] text-[#6a9975] font-mono">{pdf.code}</p>
+                    </div>
+                    <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#22b864] opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Download className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-8 text-center border-2 border-dashed border-[#e6faf0] rounded-2xl">
+                  <p className="text-xs text-[#6a9975]">No recent PDFs found</p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Progress Bars */}
-          <div className="space-y-4">
-            {academicProgress.map((item, index) => (
-              <div key={index} className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-[#3a6645] font-bold">{item.subject}</span>
-                  <span className="text-[#071a0d] font-black">{item.percentage}%</span>
-                </div>
-                <div className="w-full h-2 bg-[#e6faf0] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-linear-to-r from-[#22b864] to-[#4fd68a] rounded-full transition-all duration-700"
-                    style={{ width: `${item.percentage}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
+          {/* Quick Stats Footer */}
+          <div className="mt-auto pt-4 border-t border-[#d8eedd]">
+            <p className="text-[11px] text-[#6a9975] leading-relaxed">
+              Want to see your future grades? Use our <span className="text-[#22b864] font-bold cursor-pointer hover:underline" onClick={() => setActiveSection('gpa-predictor')}>GPA Predictor</span> to calculate your potential results for this semester.
+            </p>
           </div>
 
           {/* Quick Stats Footer */}
           <div className="mt-6 pt-4 border-t border-[#d8eedd]">
             <div className="flex justify-between items-center text-xs">
-              <span className="text-[#6a9975]">Semester Progress</span>
-              <span className="font-bold text-[#22b864]">76%</span>
+              <span className="text-[#6a9975]">Library Utilization</span>
+              <span className="font-bold text-[#22b864]">Active</span>
             </div>
             <div className="mt-2 h-1.5 bg-[#e6faf0] rounded-full overflow-hidden">
-              <div className="h-full w-[76%] bg-linear-to-r from-[#0f6e3f] to-[#22b864] rounded-full"></div>
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: "65%" }}
+                transition={{ duration: 1, delay: 0.5 }}
+                className="h-full bg-linear-to-r from-[#0f6e3f] to-[#22b864] rounded-full"
+              ></motion.div>
             </div>
           </div>
         </div>
@@ -377,25 +419,37 @@ const DashboardView: React.FC = () => {
 
       {/* Quick Links Section - NacosHub style */}
       <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white border border-[#d8eedd] rounded-2xl p-4 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer group">
+        <div 
+          onClick={() => setActiveSection('courses')}
+          className="bg-white border border-[#d8eedd] rounded-2xl p-4 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer group"
+        >
           <div className="w-10 h-10 rounded-xl bg-[#e6faf0] flex items-center justify-center mx-auto mb-2 text-[#0f6e3f] group-hover:scale-110 transition-transform">
             <BookOpen className="w-4 h-4" />
           </div>
           <span className="text-xs font-bold text-[#071a0d]">Browse Courses</span>
         </div>
-        <div className="bg-white border border-[#d8eedd] rounded-2xl p-4 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer group">
+        <div 
+          onClick={() => setActiveSection('results')}
+          className="bg-white border border-[#d8eedd] rounded-2xl p-4 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer group"
+        >
           <div className="w-10 h-10 rounded-xl bg-[#e6faf0] flex items-center justify-center mx-auto mb-2 text-[#0f6e3f] group-hover:scale-110 transition-transform">
             <GraduationCap className="w-4 h-4" />
           </div>
           <span className="text-xs font-bold text-[#071a0d]">View Results</span>
         </div>
-        <div className="bg-white border border-[#d8eedd] rounded-2xl p-4 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer group">
+        <div 
+          onClick={() => setActiveSection('purchases')}
+          className="bg-white border border-[#d8eedd] rounded-2xl p-4 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer group"
+        >
           <div className="w-10 h-10 rounded-xl bg-[#e6faf0] flex items-center justify-center mx-auto mb-2 text-[#0f6e3f] group-hover:scale-110 transition-transform">
             <ShoppingBag className="w-4 h-4" />
           </div>
           <span className="text-xs font-bold text-[#071a0d]">Merch Store</span>
         </div>
-        <div className="bg-white border border-[#d8eedd] rounded-2xl p-4 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer group">
+        <div 
+          onClick={() => setActiveSection('pdf-library')}
+          className="bg-white border border-[#d8eedd] rounded-2xl p-4 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer group"
+        >
           <div className="w-10 h-10 rounded-xl bg-[#e6faf0] flex items-center justify-center mx-auto mb-2 text-[#0f6e3f] group-hover:scale-110 transition-transform">
             <FileText className="w-4 h-4" />
           </div>
@@ -421,9 +475,10 @@ const DashboardView: React.FC = () => {
 
 const StudentDashboard: React.FC = () => {
   const { activeSection = "dashboard" } = useStudent();
+  const router = useRouter();
 
   const renderView = () => {
-    const sections = ["dashboard", "courses", "results", "purchases", "pdf-library", "notifications"];
+    const sections = ["dashboard", "courses", "results", "purchases", "pdf-library", "notifications", "gpa-predictor", 'game-hub'];
     const screens = [
       <DashboardView />,
       <MyCourses />,
@@ -431,6 +486,8 @@ const StudentDashboard: React.FC = () => {
       <MerchResources />,
       <PdfLibrary />,
       <NotificationsPage />,
+      <GPAPredictionEngine />,
+      <GameHub />
     ]
     
     const activeIndex = sections.indexOf(activeSection);

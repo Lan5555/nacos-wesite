@@ -40,7 +40,8 @@ import {
   Search,
   Download,
   ChartBar,
-  Cog
+  Cog,
+  Gamepad
 } from 'lucide-react';
 import Validator from '@/app/validators/auth-validator';
 import { Exco, ExcosManagement } from './manage-excos/manage-excos';
@@ -51,6 +52,7 @@ import CourseManagement from './manage-courses/manage-courses';
 import ResultsManagement from './manage-results/manage-results';
 import AdminSettings from './settings/settings';
 import CoreService from '@/app/hooks/core-service';
+import AdminGameManagement from './manage-games/manage-games';
 
 // --- Types ---
 type Student = {
@@ -104,6 +106,17 @@ type ActivityLogEntry = {
   action: string;
   timestamp: string;
   details: string;
+};
+
+export type StudentData = {
+  id: number;
+  mat_no: string;
+  name: string;
+  email: string;
+  department: string;
+  level: string;
+  phone: string;
+  isAdmin: boolean;
 };
 
 const service:CoreService = new CoreService();
@@ -195,11 +208,17 @@ const AdminPage: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('overview');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [studentsLoading, setStudentsLoading] = useState(false);
   const [logsLoading, setLogsLoading] = useState(false);
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [studentSearch, setStudentSearch] = useState('');
   const [studentLevelFilter, setStudentLevelFilter] = useState('all');
   const [studentDeptFilter, setStudentDeptFilter] = useState('all');
+  const [repMatricSearch, setRepMatricSearch] = useState('');
+  const [repSearch, setRepSearch] = useState('');
+  const [repDeptFilter, setRepDeptFilter] = useState('all');
+  const [repLevelFilter, setRepLevelFilter] = useState('all');
   const [financeSearch, setFinanceSearch] = useState('');
   const [financeTypeFilter, setFinanceTypeFilter] = useState('all');
   
@@ -214,6 +233,10 @@ const AdminPage: React.FC = () => {
   const [eventsLoading, setEventsLoading] = useState(false);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   const [adminData, setAdminData] = useState<Partial<Exco>>({});
+  const [fetchAmount, setFetchAmount] = useState<Record<string,number>>({
+    take: 10,
+    skip: 0
+  });
 
   // Modal States
   const [modals, setModals] = useState({
@@ -254,18 +277,22 @@ const AdminPage: React.FC = () => {
     setNewStaff({ id: '', name: '', role: '', dept: '' });
     setNewPayment({ desc: '', amount: '', paidBy: '' });
     setNewEvent({ title: '', body:'', date: '' });
+    setRepMatricSearch('');
   };
 
   // Handlers
   const handleAddStudent = () => {
+    setIsSubmitting(true);
     if (newStudent.matric && newStudent.name && newStudent.dept) {
-      const student: Student = {
-        id: Date.now().toString(),
-        matric: newStudent.matric,
+      const student: StudentData = {
+        id: Date.now(),
+        mat_no: newStudent.matric,
         name: newStudent.name,
-        level: parseInt(newStudent.level),
-        dept: newStudent.dept,
-        isRep: false,
+        level: newStudent.level,
+        department: newStudent.dept,
+        isAdmin: false,
+        email: `${newStudent.name.replace(/\s/g, '').toLowerCase()}@nacos.edu`,
+        phone: ""
       };
       setStudents(prev => [...prev, student]);
       addLog('Add Student', `Added new student: ${newStudent.name}`);
@@ -274,39 +301,66 @@ const AdminPage: React.FC = () => {
     } else {
       showToast('Fill all required fields');
     }
+    setIsSubmitting(false);
   };
 
-  const handleMakeRep = (student: Student) => {
-    if (!student.isRep) {
-      setStudents(prev => prev.map(s => s.id === student.id ? { ...s, isRep: true } : s));
-      const newRep: Rep = {
-        id: Date.now(),
+  const handleMakeRep = async(student: StudentData) => {
+    if (!student.isAdmin) {
+      try{
+        setIsSubmitting(true);
+        const res = await service.get(`admin/make-rep?id=${student.id}`);
+        if(res.success){
+      
+      setStudents(prev => prev.map(s => s.id === student.id ? { ...s, isAdmin: true } : s));
+      const newRep: StudentData = {
+        id: student.id,
+        mat_no: student.mat_no,
         name: student.name,
-        dept: student.dept,
-        level: student.level,
-        contact: `${student.name.replace(/\s/g, '').toLowerCase()}@nacos.edu`,
-        status: 'Active',
+        department: student.department,
+        level:student.level,
+        isAdmin: true,
+        email: student.email,
+        phone: student.phone
       };
+      
       setReps(prev => [...prev, newRep]);
       addLog('Appoint Rep', `Appointed ${student.name} as Departmental Rep`);
       showToast(`${student.name} is now a Rep`);
+    }else{
+      showToast(res.message);
+    }
+      }catch(e:any){
+      showToast(e.message);
+    }
+    setIsSubmitting(false);
     }
   };
 
-  const handleDismissRep = (repName: string) => {
-    setReps(prev => prev.filter(r => r.name !== repName));
-    setStudents(prev => prev.map(s => s.name === repName ? { ...s, isRep: false } : s));
-    addLog('Dismiss Rep', `Dismissed rep ${repName}`);
-    showToast(`${repName} removed from reps`);
+  const handleDismissRep = async (rep: StudentData) => {
+    try {
+      setIsSubmitting(true);
+      const res = await service.delete(`admin/remove-rep?id=${rep.id}`);
+      if (res.success) {
+        setReps(prev => prev.filter(r => r.id !== rep.id));
+        setStudents(prev => prev.map(s => s.name === rep.name ? { ...s, isAdmin: false } : s));
+        addLog('Dismiss Rep', `Dismissed rep ${rep.name}`);
+        showToast(`${rep.name} removed from reps`);
+      } else {
+        showToast(res.message);
+      }
+    } catch (e: any) {
+      showToast(e.message || "Failed to remove rep");
+    }
+    setIsSubmitting(false);
   };
 
-  const handleDeleteStudent = (studentId: string) => {
+  const handleDeleteStudent = (studentId: number) => {
     const student = students.find(s => s.id === studentId);
-    if (student && student.isRep) {
+    if (student && student.isAdmin) {
       setReps(prev => prev.filter(r => r.name !== student.name));
     }
     setStudents(prev => prev.filter(s => s.id !== studentId));
-    addLog('Remove Student', `Removed student ${student?.matric}`);
+    addLog('Remove Student', `Removed student ${student?.mat_no}`);
     showToast('Student removed');
   };
 
@@ -510,12 +564,12 @@ const handleDeleteEvent = async (eventId: number) => {
 };
 
 
-  const handleAppointRepFromModal = (selectedStudentId: string) => {
-    const student = students.find(s => s.id === selectedStudentId);
-    if (student && !student.isRep) {
-      handleMakeRep(student);
+  const handleAppointRepFromModal = (selectedStudentId: StudentData) => {
+    //const student = students.find(s => s.id === selectedStudentId);
+    //if (student && !student.isAdmin) {
+      handleMakeRep(selectedStudentId);
       closeModal('appointRep');
-    }
+    //}
   };
 
   const handleDownloadFinanceReport = () => {
@@ -603,11 +657,56 @@ useEffect(() => {
     }
   }, []);
 
+  const findOneStudent = async(mat_no: string) => {
+    try{
+      const res = await service.get(`users/find-one-user?mat_no=${mat_no}`);
+      if(res.success){
+          showToast(res.message);
+          setStudent(res.data);
+      }else{
+        showToast(res.message);
+      }
+    }catch(e:any){
+      showToast(e);
+    }
+  }
+
+  const fetchStudents = useCallback(async (level?: string, dept?: string, take?: number, skip?: number) => {
+    setStudentsLoading(true);
+    try{
+      const levelParam = level && level !== 'all' ? `&level=${level}` : '';
+      const deptParam = dept && dept !== 'all' ? `&department=${dept}` : '';
+      
+      const res = await service.get(`users/find-all-users?take=${take || 10}&skip=${skip || 0}${levelParam}${deptParam}`);
+      if(res.success){
+        setStudents(res.data);
+      }else{
+        showToast(res.message);
+      }
+    }catch(e:any){
+      showToast(e.message || "Failed to fetch students");
+    }
+    setStudentsLoading(false);
+  }, []);
+
+  const fetchCourseReps = useCallback(async(level?: string, dept?: string) => {
+    const levelParam = level && level !== 'all' ? `&level=${level}` : '';
+    const deptParam = dept && dept !== 'all' ? `&department=${dept}` : '';
+    const res = await service.get(`admin/find-all-reps?${levelParam}${deptParam}`);
+    if(res.success){
+      setReps(res.data);
+    }else{
+      showToast(res.message);
+    }
+  },[]); 
+
   useEffect(() => {
     loadAdminData();
     fetchActivityLogs();
     cleanupOldActivityLogs();
-  },[]);
+    fetchCourseReps();
+    fetchStudents(studentLevelFilter, studentDeptFilter, fetchAmount.take, fetchAmount.skip);
+  }, [cleanupOldActivityLogs, fetchStudents, studentLevelFilter, studentDeptFilter, fetchAmount, fetchCourseReps]);
 
   //==========================================//
 
@@ -625,9 +724,15 @@ useEffect(() => {
         </select>
         <select value={studentDeptFilter} onChange={(e) => setStudentDeptFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
           <option value="all">All Departments</option>
-          {Array.from(new Set(students.map(s => s.dept))).map(dept => <option key={dept} value={dept}>{dept}</option>)}
+          {Array.from(new Set(students.map(s => s.department))).map(dept => <option key={dept} value={dept}>{dept}</option>)}
         </select>
       </div>
+      {studentsLoading ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3 bg-white rounded-xl border border-slate-200">
+          <RefreshCw className="w-8 h-8 text-emerald-600 animate-spin" />
+          <p className="text-sm text-slate-500 font-medium">Loading student records...</p>
+        </div>
+      ) : (
       <div className="overflow-x-auto rounded-xl border border-slate-200">
       <table className="w-full">
         <thead className="bg-slate-50 border-b border-slate-200">
@@ -642,18 +747,18 @@ useEffect(() => {
         </thead>
         <tbody className="divide-y divide-slate-200 bg-white">
           {students.filter(s => {
-            const matchesSearch = s.name.toLowerCase().includes(studentSearch.toLowerCase()) || s.matric.toLowerCase().includes(studentSearch.toLowerCase());
-            const matchesLevel = studentLevelFilter === 'all' || s.level.toString() === studentLevelFilter;
-            const matchesDept = studentDeptFilter === 'all' || s.dept === studentDeptFilter;
+            const matchesSearch = s.name.toLowerCase().includes(studentSearch.toLowerCase()) || s.mat_no.toLowerCase().includes(studentSearch.toLowerCase());
+            const matchesLevel = studentLevelFilter === 'all' || s.level === studentLevelFilter;
+            const matchesDept = studentDeptFilter === 'all' || s.department === studentDeptFilter;
             return matchesSearch && matchesLevel && matchesDept;
           }).map((student, idx) => (
             <tr key={student.id} className="hover:bg-slate-50 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-emerald-600">{student.matric}</td>
+              <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-emerald-600">{student.mat_no}</td>
               <td className="px-6 py-4 whitespace-nowrap font-semibold text-slate-900">{student.name}</td>
               <td className="px-6 py-4 whitespace-nowrap"><span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100">{student.level}L</span></td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{student.dept}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{student.department}</td>
               <td className="px-6 py-4 whitespace-nowrap">
-                {student.isRep ? (
+                {student.isAdmin ? (
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-900 text-emerald-100 text-[10px] font-bold uppercase tracking-tight">
                     <Crown size={10} /> Rep
                   </span>
@@ -663,14 +768,15 @@ useEffect(() => {
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex gap-2">
-                  {!student.isRep && (
+                  {student.isAdmin ? (
+                    <button onClick={() => handleDismissRep(student)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-bold hover:bg-red-50 transition-all">
+                      <UserMinus size={12} /> Remove Rep
+                    </button>
+                  ) : (
                     <button onClick={() => handleMakeRep(student)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 text-xs font-bold hover:bg-emerald-50 transition-all">
                       <Crown size={12} /> Make Rep
                     </button>
                   )}
-                  <button onClick={() => handleDeleteStudent(student.id)} className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-all flex justify-center items-center gap-1">
-                    <Trash2 size={12} /> Delete
-                  </button>
                 </div>
               </td>
             </tr>
@@ -678,10 +784,28 @@ useEffect(() => {
         </tbody>
       </table>
     </div>
+    )}
     </div>
   );
 
   const renderRepsTable = () => (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-50">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          <input type="text" placeholder="Search reps by name..." value={repSearch} onChange={(e) => setRepSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        </div>
+        <select value={repLevelFilter} onChange={(e) => setRepLevelFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+          <option value="all">All Levels</option>
+          <option value="100">100L</option><option value="200">200L</option><option value="300">300L</option><option value="400">400L</option>
+        </select>
+        <select value={repDeptFilter} onChange={(e) => setRepDeptFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+          <option value="all">All Departments</option>
+          {Array.from(new Set(reps.map(r => r.department))).map((dept, idx) => (
+            <option key={`${dept}-${idx}`} value={dept}>{dept}</option>
+          ))}
+        </select>
+      </div>
     <div className="overflow-x-auto rounded-xl border border-slate-200">
       <table className="w-full">
         <thead className="bg-slate-50 border-b border-slate-200">
@@ -695,15 +819,20 @@ useEffect(() => {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200 bg-white">
-          {reps.map((rep, idx) => (
+          {reps.filter(r => {
+            const matchesSearch = r.name.toLowerCase().includes(repSearch.toLowerCase());
+            const matchesDept = repDeptFilter === 'all' || r.department === repDeptFilter;
+            const matchesLevel = repLevelFilter === 'all' || r.level.toString() === repLevelFilter;
+            return matchesSearch && matchesDept && matchesLevel;
+          }).map((rep, idx) => (
             <tr key={rep.id} className="hover:bg-slate-50 transition-colors">
               <td className="px-6 py-4 whitespace-nowrap font-semibold text-slate-900">{rep.name}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{rep.dept}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{rep.department}</td>
               <td className="px-6 py-4 whitespace-nowrap"><span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100">{rep.level}L</span></td>
-              <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-emerald-600">{rep.contact}</td>
-              <td className="px-6 py-4 whitespace-nowrap"><span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-tight border border-emerald-100">{rep.status}</span></td>
+              <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-emerald-600">{rep.email}</td>
+              <td className="px-6 py-4 whitespace-nowrap"><span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-tight border border-emerald-100">Active</span></td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <button onClick={() => handleDismissRep(rep.name)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition-all">
+                <button onClick={() => handleDismissRep(rep)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition-all">
                   <UserMinus size={12} /> Dismiss
                 </button>
               </td>
@@ -711,6 +840,7 @@ useEffect(() => {
           ))}
         </tbody>
       </table>
+    </div>
     </div>
   );
 
@@ -910,7 +1040,8 @@ useEffect(() => {
     { id: 'staff', label: 'Staff Directory', icon: <UserCheck size={18} />, permission: 'manage_staff' },
     { id: 'finance', label: 'Finance & Dues', icon: <Coins size={18} />, permission: 'manage_finance' },
     { id: 'events', label: 'Events', icon: <CalendarCheck size={18} />, badge: true, permission: 'manage_events' },
-    { id: 'settings', label: 'Settings', icon: <Cog size={18} />, permission: 'manage_settings' }
+    { id: 'settings', label: 'Settings', icon: <Cog size={18} />, permission: 'manage_settings' },
+    { id: 'games', label: 'Games', icon: <Gamepad  size={18} />, permission: 'manage_games' }
   ];
 
   const filteredNavItems = navItems.filter(item => {
@@ -1110,12 +1241,20 @@ useEffect(() => {
                 </div>
                 <h3 className="font-serif text-emerald-900">Student Directory</h3>
               </div>
-              <button onClick={() => setModals(prev => ({ ...prev, addStudent: true }))} className="flex items-center gap-1 px-4 py-2 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-sm font-semibold hover:opacity-90 transition shadow-sm">
-                <Plus size={14} /> Add Student
-              </button>
             </div>
             <div className="p-5">
               {renderStudentsTable()}
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={() => {
+                    setFetchAmount(prev => ({ ...prev, take: prev.take + 10 }));
+                    showToast('Loading more students...');
+                  }}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50 transition-all"
+                >
+                  <RefreshCw size={14} /> Load More Students
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1224,6 +1363,7 @@ useEffect(() => {
         {/* Results Section */}
         {activeSection === 'results' && (<ResultsManagement/>)}
         {activeSection === 'settings' && (<AdminSettings/>)}
+        {activeSection === 'games' && (<AdminGameManagement/>)}
       </main>
 
       {/* Modals */}
@@ -1256,20 +1396,71 @@ useEffect(() => {
 
       <Modal isOpen={modals.appointRep} onClose={() => closeModal('appointRep')} title="Appoint Departmental Rep" icon={<Crown size={18} />}>
         <div>
-          <label className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Select Student</label>
-          <select id="repSelect" className="w-full mt-1 px-4 py-2 rounded-xl border border-emerald-200 bg-emerald-50/30 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-            <option value="">Select a student</option>
-            {students.filter(s => !s.isRep).map(s => (
-              <option key={s.id} value={s.id}>{s.name} – {s.dept}</option>
-            ))}
-          </select>
+          <label className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Search by Matric Number</label>
+          <div className="relative mt-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <input 
+              type="text" 
+              value={repMatricSearch} 
+              onChange={e => {
+                const val = e.target.value;
+                setRepMatricSearch(val);
+                if (val.length === 15) {
+                  findOneStudent(val);
+                }
+              }} 
+              className="w-full pl-10 pr-4 py-2 rounded-xl border border-emerald-200 bg-emerald-50/30 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition" 
+              placeholder="Enter Matric No (e.g. NAC/CS/2102)" 
+            />
+            {repMatricSearch.length === 15 && !student && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <RefreshCw className="w-4 h-4 text-emerald-600 animate-spin" />
+              </div>
+            )}
+          </div>
+
+          {student && (
+            <div className="mt-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/30 animate-fade-up">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-bold text-slate-900">{student.name}</div>
+                  <div className="text-xs text-emerald-600 font-mono">{student.mat_no} • {student.department}</div>
+                  <div className="text-[10px] text-slate-500 mt-1">{student.email}</div>
+                </div>
+                <button 
+                  disabled={isSubmitting}
+                  onClick={() => handleAppointRepFromModal(student)}
+                  className="px-4 py-2 rounded-lg bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-xs font-bold hover:opacity-90 transition shadow-sm flex items-center gap-2"
+                >
+                  {isSubmitting && <RefreshCw size={12} className="animate-spin" />}
+                  {isSubmitting ? 'Appointing...' : 'Appoint as Rep'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {repMatricSearch && (
+            <div className="mt-4 space-y-2">
+              {students.filter(s => !s.isAdmin && s.mat_no.toLowerCase().includes(repMatricSearch.toLowerCase())).map(s => (
+                <div key={s.id} className="flex items-center justify-between p-3 rounded-xl border border-emerald-100 bg-emerald-50/20 hover:bg-emerald-50 transition-colors">
+                  <div>
+                    <div className="font-semibold text-slate-900 text-sm">{s.name}</div>
+                    <div className="text-xs text-emerald-600 font-mono">{s.mat_no} • {s.department}</div>
+                  </div>
+                  <button 
+                    disabled={isSubmitting}
+                    onClick={() => handleAppointRepFromModal(s)}
+                    className="px-3 py-1.5 rounded-lg bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-xs font-bold hover:opacity-90 transition shadow-sm flex items-center gap-2"
+                  >
+                    {isSubmitting && <RefreshCw size={12} className="animate-spin" />}
+                    Appoint
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex justify-end gap-3 pt-6">
-            <button onClick={() => closeModal('appointRep')} className="px-4 py-2 rounded-full border border-emerald-200 text-emerald-600 text-sm font-semibold hover:bg-emerald-50 transition">Cancel</button>
-            <button onClick={() => {
-              const select = document.getElementById('repSelect') as HTMLSelectElement;
-              if (select.value) handleAppointRepFromModal(select.value);
-              else showToast('Please select a student');
-            }} className="px-4 py-2 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-sm font-semibold hover:opacity-90 transition shadow-sm">Appoint</button>
+            <button onClick={() => closeModal('appointRep')} className="px-4 py-2 rounded-full border border-emerald-200 text-emerald-600 text-sm font-semibold hover:bg-emerald-50 transition w-full">Close</button>
           </div>
         </div>
       </Modal>
@@ -1289,7 +1480,11 @@ useEffect(() => {
           <div><label className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Description</label><input type="text" value={newPayment.desc} onChange={e => setNewPayment(prev => ({ ...prev, desc: e.target.value }))} className="w-full mt-1 px-4 py-2 rounded-xl border border-emerald-200 bg-emerald-50/30 focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="e.g. Annual Dues – 300 Level" /></div>
           <div><label className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Amount</label><input type="text" value={newPayment.amount} onChange={e => setNewPayment(prev => ({ ...prev, amount: e.target.value }))} className="w-full mt-1 px-4 py-2 rounded-xl border border-emerald-200 bg-emerald-50/30 focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="₦15,000" /></div>
           <div><label className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Paid By</label><input type="text" value={newPayment.paidBy} onChange={e => setNewPayment(prev => ({ ...prev, paidBy: e.target.value }))} className="w-full mt-1 px-4 py-2 rounded-xl border border-emerald-200 bg-emerald-50/30 focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="Student name" /></div>
-          <div className="flex justify-end gap-3 pt-4"><button onClick={() => closeModal('recordPayment')} className="px-4 py-2 rounded-full border border-emerald-200 text-emerald-600 text-sm font-semibold hover:bg-emerald-50 transition">Cancel</button><button onClick={handleRecordPayment} className="px-4 py-2 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-sm font-semibold hover:opacity-90 transition shadow-sm">Record</button></div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button disabled={isSubmitting} onClick={() => closeModal('recordPayment')} className="px-4 py-2 rounded-full border border-emerald-200 text-emerald-600 text-sm font-semibold hover:bg-emerald-50 transition">Cancel</button>
+            <button disabled={isSubmitting} onClick={handleRecordPayment} className="px-4 py-2 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-sm font-semibold hover:opacity-90 transition shadow-sm flex items-center gap-2">
+              {isSubmitting && <RefreshCw size={14} className="animate-spin" />}
+              Record</button></div>
         </div>
       </Modal>
 
@@ -1298,7 +1493,11 @@ useEffect(() => {
           <div><label className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Event Title</label><input type="text" value={newEvent.title} onChange={e => setNewEvent(prev => ({ ...prev, title: e.target.value }))} className="w-full mt-1 px-4 py-2 rounded-xl border border-emerald-200 bg-emerald-50/30 focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="e.g. Tech Summit 2027" /></div>
           <div><label className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Event Body</label><textarea value={newEvent.body} onChange={e => setNewEvent(prev => ({ ...prev, body: e.target.value }))} className="w-full mt-1 px-4 py-2 rounded-xl border border-emerald-200 bg-emerald-50/30 focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="e.g. Some new Event Message" /></div>
           <div><label className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Date</label><input type="date" value={newEvent.date} onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))} className="w-full mt-1 px-4 py-2 rounded-xl border border-emerald-200 bg-emerald-50/30 focus:outline-none focus:ring-2 focus:ring-emerald-400" /></div>
-          <div className="flex justify-end gap-3 pt-4"><button onClick={() => closeModal('createEvent')} className="px-4 py-2 rounded-full border border-emerald-200 text-emerald-600 text-sm font-semibold hover:bg-emerald-50 transition">Cancel</button><button onClick={handleCreateEvent} className="px-4 py-2 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-sm font-semibold hover:opacity-90 transition shadow-sm">Create</button></div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button disabled={isSubmitting} onClick={() => closeModal('createEvent')} className="px-4 py-2 rounded-full border border-emerald-200 text-emerald-600 text-sm font-semibold hover:bg-emerald-50 transition">Cancel</button>
+            <button disabled={isSubmitting} onClick={handleCreateEvent} className="px-4 py-2 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-sm font-semibold hover:opacity-90 transition shadow-sm flex items-center gap-2">
+              {isSubmitting && <RefreshCw size={14} className="animate-spin" />}
+              Create</button></div>
         </div>
       </Modal>
 

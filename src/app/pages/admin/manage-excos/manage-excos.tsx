@@ -106,7 +106,7 @@ export const ExcosManagement:React.FC<Props> = ({activeExco}) => {
   ];
 
   
-  const fetchExcos = async () => {
+  const fetchExcos = useCallback(async () => {
   // Only show the full-page loader if we don't have any data yet
   if (excos.length === 0) {
     setPageLoading(true);
@@ -128,7 +128,7 @@ export const ExcosManagement:React.FC<Props> = ({activeExco}) => {
   } finally {
     setPageLoading(false); 
   }
-};
+}, [showToast, excos.length]);
 
 
 

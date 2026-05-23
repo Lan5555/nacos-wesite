@@ -1,61 +1,51 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import StudentHeader from "../components/StudentHeader";
 import { Bell, Check, Trash2, GraduationCap, BookOpen, ShoppingBag, Info } from "lucide-react";
 import { useStudent, NotificationItem } from "../layout";
+import CoreService from "@/app/hooks/core-service";
 
-// ============================================================================
-// API INTEGRATION AND INTERFACES (COMMENTED OUT UNTIL BACKEND IS READY)
-// ============================================================================
-// import CoreService from "@/app/hooks/core-service";
-//
-// interface APINotification {
-//   id: string;
-//   title: string;
-//   message: string;
-//   timestamp: string;
-//   isRead: boolean;
-//   type: "academic" | "course" | "purchase" | "alert";
-// }
-// ============================================================================
+const coreService = new CoreService();
 
 const NotificationsPage: React.FC = () => {
-  const { unreadCount, notifications, markNotificationRead, markAllNotificationsRead } = useStudent();
+  const { profile, markNotificationRead, markAllNotificationsRead, showToast, setUnreadCount } = useStudent();
   const [clearing, setClearing] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // ============================================================================
-  // COMMENTED API CALL EXAMPLE: UNCOMMENT THIS BLOCK TO INTEGRATE YOUR BACKEND
-  // ============================================================================
-  // const [apiNotifications, setApiNotifications] = useState<APINotification[]>([]);
-  //
-  // const fetchNotifications = async () => {
-  //   const service = new CoreService();
-  //   try {
-  //     const response = await service.get("content/v1/student/notifications");
-  //     if (response.success && response.data) {
-  //       // setApiNotifications(response.data);
-  //     }
-  //   } catch (error) {
-  //     console.error("Failed to load notifications from API:", error);
-  //   }
-  // };
-  //
-  // const handleMarkAllReadApi = async () => {
-  //   setClearing(true);
-  //   const service = new CoreService();
-  //   try {
-  //     const response = await service.put("content/v1/notifications/read-all", {});
-  //     if (response.success) {
-  //       markAllNotificationsRead(); // Update UI Context globally
-  //     }
-  //   } catch (error) {
-  //     console.error("Failed to update notifications via API:", error);
-  //   } finally {
-  //     setClearing(false);
-  //   }
-  // };
-  // ============================================================================
+  const fetchNotifications = useCallback(async () => {
+    if (!profile.matricNo) return;
+    setLoading(true);
+    try {
+      const response = await coreService.get(`student-notifications/find-all?mat_no=${profile.matricNo}`);
+      if (response.success && Array.isArray(response.data)) {
+        const mapped: NotificationItem[] = response.data.map((n: any) => ({
+          id: n.id.toString(),
+          title: n.title,
+          message: n.message,
+          time: new Date(n.createdAt).toLocaleDateString() + ' ' + new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          read: n.isRead,
+          type: n.title.toLowerCase().includes('registration') || n.title.toLowerCase().includes('result') ? "academic" : "alert"
+        }));
+        setNotifications(mapped);
+      }
+    } catch (error) {
+      console.error("Failed to load notifications:", error);
+      showToast("Failed to load notifications", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [profile.matricNo, showToast]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  // Sync local notifications unread count with layout context
+  useEffect(() => {
+    setUnreadCount(notifications.filter(n => !n.read).length);
+  }, [notifications, setUnreadCount]);
 
   const getIcon = (type: NotificationItem["type"]) => {
     switch (type) {
@@ -91,10 +81,12 @@ const NotificationsPage: React.FC = () => {
     }, 400);
   };
 
+  const currentUnreadCount = notifications.filter(n => !n.read).length;
+
   return (
     <div className="flex flex-col gap-6 md:gap-8 flex-1 pb-10">
       {/* Header Panel */}
-      <StudentHeader title="Notifications" unreadCount={unreadCount} />
+      <StudentHeader title="Notifications" unreadCount={currentUnreadCount} />
 
       {/* Notifications list wrapper */}
       <div className="bg-white border border-[#d8eedd] rounded-3xl shadow-sm overflow-hidden w-full flex flex-col select-none">
@@ -109,7 +101,7 @@ const NotificationsPage: React.FC = () => {
           </div>
           
           {/* Mark all as read action button */}
-          {unreadCount > 0 && (
+          {currentUnreadCount > 0 && (
             <button
               onClick={handleMarkAllRead}
               disabled={clearing}
@@ -123,7 +115,14 @@ const NotificationsPage: React.FC = () => {
 
         {/* Notifications list feed */}
         <div className="p-5 md:p-6">
-          {notifications.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="w-10 h-10 border-4 border-[#e8f5ed] border-t-[#2dba4e] rounded-full animate-spin"></div>
+              <p className="text-xs text-[#3d5a45]/60 mt-4 font-medium">
+                Fetching your updates...
+              </p>
+            </div>
+          ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center select-none">
               <div className="w-16 h-16 bg-[#e8f5ed] border border-[#d8eedd] rounded-2xl flex items-center justify-center text-[#2dba4e] mb-4">
                 <Bell className="w-7 h-7" />
