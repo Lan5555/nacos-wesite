@@ -1,10 +1,11 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import StudentSidebar from "./components/StudentSidebar";
 import { X, CheckCircle, Info, AlertTriangle, Menu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Validator from "@/app/validators/auth-validator";
+import CoreService from "@/app/hooks/core-service";
 
 // Types for dynamic states
 export interface NotificationItem {
@@ -14,6 +15,9 @@ export interface NotificationItem {
   time: string;
   read: boolean;
   type: "academic" | "course" | "purchase" | "alert";
+  timestamp?: Date;
+  priority?: string;
+  author?: string;
 }
 
 export interface StudentProfile {
@@ -24,6 +28,7 @@ export interface StudentProfile {
   matricNo: string;
   email?: string;
   initials: string;
+  isAdmin?: boolean;
 }
 
 interface StudentContextType {
@@ -31,6 +36,11 @@ interface StudentContextType {
   unreadCount: number;
   setUnreadCount: React.Dispatch<React.SetStateAction<number>>;
   notifications: NotificationItem[];
+  setNotifications: React.Dispatch<React.SetStateAction<NotificationItem[]>>;
+  classNotifications: any[];
+  setClassNotifications: React.Dispatch<React.SetStateAction<any[]>>;
+  refreshNotifications: () => Promise<void>;
+  deleteNotification: (id: string) => Promise<void>;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   registeredCourses: string[];
@@ -58,6 +68,8 @@ export const useStudent = () => {
   return context;
 };
 
+const coreService = new CoreService();
+
 const StudentLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // 1. Student Info State
   const [profile, setProfile] = useState<StudentProfile>({
@@ -81,6 +93,7 @@ const StudentLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           matricNo: studentData.mat_no,
           email: studentData.email,
           initials: studentData.name ? studentData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().substring(0, 2) : "S",
+          isAdmin: studentData.isAdmin || false,
         });
       } catch (error) {
         console.error("Error loading session data:", error);
@@ -88,59 +101,83 @@ const StudentLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     }
   }, []);
 
-  // 2. Notifications State (3 unread initially to match the badge in screenshots)
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: "1",
-      title: "Results Posted",
-      message: "Your grade for CSC 401: Advanced Software Engineering has been uploaded. You scored an A!",
-      time: "10 minutes ago",
-      read: false,
-      type: "academic",
-    },
-    {
-      id: "2",
-      title: "Course Registration Open",
-      message: "Harmattan Semester 2026 course registration is active. Register your available courses now.",
-      time: "2 hours ago",
-      read: false,
-      type: "course",
-    },
-    {
-      id: "3",
-      title: "Merchandise Available",
-      message: "Nacos Eco Notebooks and official hoodies are now in stock in the Purchases center.",
-      time: "1 day ago",
-      read: false,
-      type: "purchase",
-    },
-    {
-      id: "4",
-      title: "Active Session Approved",
-      message: "Your biometric attendance session has been authenticated successfully.",
-      time: "2 days ago",
-      read: true,
-      type: "alert",
-    },
-  ]);
+  // 2. Notifications State
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [classNotifications, setClassNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const [unreadCount, setUnreadCount] = useState(3);
+  const fetchAllNotifications = useCallback(async () => {
+    if (!profile.matricNo) return;
+    try {
+      const personalRes = await coreService.get(`student-notifications/find-all?mat_no=${profile.matricNo}`);
+      if (personalRes?.success && Array.isArray(personalRes.data)) {
+        const mapped: NotificationItem[] = personalRes.data.map((n: any) => ({
+          id: n.id.toString(),
+          title: n.title,
+          message: n.message,
+          time: new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: new Date(n.createdAt),
+          read: n.isRead,
+          type: n.title.toLowerCase().includes('registration') ? "academic" : n.title.toLowerCase().includes('payment') ? "purchase" : "alert",
+          priority: n.priority || "normal"
+        }));
+        setNotifications(mapped);
+      }
 
-  // Recalculate unread count whenever notifications list updates
+      if (profile.level && profile.department) {
+        const classRes = await coreService.get(`class-notifications/find-all?level=${profile.level}&department=${profile.department}&take=20&skip=0`);
+        if (classRes?.success && Array.isArray(classRes.data)) {
+          const readClassIds = JSON.parse(localStorage.getItem(`read_class_notifs_${profile.id}`) || "[]");
+          const mappedClass = classRes.data.map((n: any) => ({
+            id: `class-${n.id}`,
+            rawId: n.id,
+            title: n.title,
+            message: n.message,
+            timestamp: new Date(n.createdAt),
+            read: readClassIds.includes(n.id),
+            type: "course",
+            author: n.author || "Course Coordinator"
+          }));
+          setClassNotifications(mappedClass);
+        }
+      }
+    } catch (error) { console.error("Portal notification sync error", error); }
+  }, [profile.matricNo, profile.level, profile.department, profile.id]);
+
+  useEffect(() => { if (profile.matricNo) fetchAllNotifications(); }, [profile.matricNo, fetchAllNotifications]);
+
   useEffect(() => {
-    const unread = notifications.filter((n) => !n.read).length;
+    const unread = notifications.filter((n) => !n.read).length + classNotifications.filter(n => !n.read).length;
     setUnreadCount(unread);
-  }, [notifications]);
+  }, [notifications, classNotifications]);
 
-  const markNotificationRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
-    showToast("Notification marked as read", "info");
+  const markNotificationRead = async (id: string) => {
+    if (id.startsWith('class-')) {
+      const rawId = parseInt(id.replace('class-', ''));
+      const readClassIds = JSON.parse(localStorage.getItem(`read_class_notifs_${profile.id}`) || "[]");
+      if (!readClassIds.includes(rawId)) {
+        readClassIds.push(rawId);
+        localStorage.setItem(`read_class_notifs_${profile.id}`, JSON.stringify(readClassIds));
+        setClassNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+      }
+    } else {
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+      await coreService.patch(`student-notifications/update?id=${id}`, { isRead: true });
+    }
+  };
+
+  const deleteNotification = async (id: string) => {
+    if (id.startsWith('class-')) return;
+    const res = await coreService.delete(`student-notifications/delete?mat_no=${profile.matricNo}&id=${id}`);
+    if (res.success) {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      showToast("Notification removed", "info");
+    }
   };
 
   const markAllNotificationsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    // API call to batch update could be added here
     showToast("All notifications marked as read", "success");
   };
 
@@ -226,6 +263,11 @@ const StudentLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         unreadCount,
         setUnreadCount,
         notifications,
+        setNotifications,
+        classNotifications,
+        setClassNotifications,
+        refreshNotifications: fetchAllNotifications,
+        deleteNotification,
         markNotificationRead,
         markAllNotificationsRead,
         registeredCourses,

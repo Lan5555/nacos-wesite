@@ -13,6 +13,7 @@ import Validator from "@/app/validators/auth-validator";
 import { useToast } from "@/app/providers/toast-provider";
 import GPAPredictionEngine from "./gpa-prediction/gpa-prediction";
 import GameHub from "./game-hub/game-hub";
+import CourseRepDashboard from "./course-reps/course-reps";
 import { useRouter } from "next/navigation";
 import CoreService from "@/app/hooks/core-service";
 
@@ -62,12 +63,12 @@ const StudentHeader: React.FC<{ title: string; unreadCount: number }> = ({ title
 const coreService = new CoreService();
 
 const DashboardView: React.FC = () => {
-  const { creditsEarned = 24, activeCoursesCount = 5, unreadCount = 3, profile, setActiveSection } = useStudent();
+  const { profile, setActiveSection, unreadCount } = useStudent();
   const [loading, setLoading] = useState(false);
 
   const [gpa] = useState(0.00);
   const [gpaDelta] = useState("Pending results");
-  const [downloadsCount, setDownloadsCount] = useState(0);
+  const [activeCoursesCount, setActiveCoursesCount] = useState(0);
   const [registeredCredits, setRegisteredCredits] = useState(0);
   const [recentPdfs, setRecentPdfs] = useState<any[]>([]);
   const [facts, setFacts] = useState<{ category: string; content: string }[]>([
@@ -116,14 +117,12 @@ const DashboardView: React.FC = () => {
       try {
         const res = await coreService.get(`courses/find-all-courses?level=${profile.level}&department=${profile.department}`);
         if (res.success && Array.isArray(res.data)) {
-          // Count items that have a download URL
-          const availablePdfs = res.data.filter((c: any) => c.downloadUrl).length;
+          setActiveCoursesCount(res.data.length);
           
           // Calculate total credits for the level
           const totalCredits = res.data.reduce((sum: number, c: any) => sum + (parseInt(c.credits) || 3), 0);
           
           setRegisteredCredits(totalCredits);
-          setDownloadsCount(availablePdfs);
           setRecentPdfs(res.data.filter((c: any) => c.downloadUrl).slice(0, 3));
         }
       } catch (error) {
@@ -218,10 +217,10 @@ const DashboardView: React.FC = () => {
               PDF Downloads
             </span>
             <span className="text-3xl font-bold text-[#071a0d] font-serif leading-none">
-              {downloadsCount || 0}
+              {recentPdfs.length || 0}
             </span>
             <span className="text-[11px] font-semibold text-[#6a9975] mt-2">
-              Available for you
+              Recent resources
             </span>
           </div>
           <div 
@@ -254,9 +253,22 @@ const DashboardView: React.FC = () => {
       {/* Main Grid: Lectures & Progress */}
       <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-start w-full">
         {/* Left Column: Today's Lectures */}
-        <div className="lg:col-span-2 bg-white border border-[#d8eedd] rounded-3xl shadow-sm overflow-hidden h-full flex flex-col relative group min-h-[320px]">
+        <div className="lg:col-span-2 bg-linear-to-br from-slate-900 to-emerald-900 border border-white/10 rounded-3xl shadow-xl overflow-hidden h-full flex flex-col relative group min-h-80">
           {/* Animated Background Elements */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {/* Big Sparkle Decoration */}
+            <motion.div
+              animate={{ 
+                scale: [0.8, 1.1, 0.8],
+                opacity: [0.1, 0.2, 0.1],
+                rotate: [0, 45, 0]
+              }}
+              transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0"
+            >
+              <Sparkles className="w-64 h-64 text-white" />
+            </motion.div>
+
             <motion.div 
               animate={{ 
                 scale: [1, 1.2, 1],
@@ -279,7 +291,7 @@ const DashboardView: React.FC = () => {
             {[...Array(6)].map((_, i) => (
               <motion.div
                 key={i}
-                className="absolute w-1.5 h-1.5 bg-[#22b864]/60 rounded-full shadow-[0_0_8px_rgba(34,184,100,0.4)]"
+                className="absolute w-1.5 h-1.5 bg-[#22b864] rounded-full shadow-[0_0_12px_rgba(34,184,100,0.8)]"
                 animate={{
                   y: [0, -100],
                   x: Math.sin(i) * 50,
@@ -300,12 +312,12 @@ const DashboardView: React.FC = () => {
             ))}
           </div>
 
-          <div className="flex items-center justify-between border-b border-[#d8eedd] p-5 md:px-6">
+          <div className="flex items-center justify-between border-b border-white/10 p-5 md:px-6 relative z-10 bg-white/5 backdrop-blur-md">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#e6faf0] flex items-center justify-center text-[#0f6e3f]">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
                 <Lightbulb className="w-4 h-4" />
               </div>
-              <h3 className="text-lg font-bold text-[#071a0d] font-serif">
+              <h3 className="text-lg font-bold text-white font-serif">
                 Did You Know?
               </h3>
             </div>
@@ -326,11 +338,11 @@ const DashboardView: React.FC = () => {
                 transition={{ duration: 0.5 }}
                 className="flex flex-col gap-4"
               >
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#22b864] bg-[#e6faf0] px-3 py-1 rounded-full w-fit flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full w-fit flex items-center gap-2">
                   <Sparkles className="w-3 h-3" />
                   {facts[currentFactIndex].category}
                 </span>
-                <p className="text-xl md:text-2xl lg:text-3xl font-serif text-[#071a0d] leading-relaxed italic relative">
+                <p className="text-xl md:text-2xl lg:text-3xl font-serif text-emerald-50/90 leading-relaxed italic relative">
                   <span className="absolute -left-6 -top-2 text-4xl text-[#22b864]/20 font-serif">"</span>
                   &ldquo;{facts[currentFactIndex].content}&rdquo;
                 </p>
@@ -405,7 +417,7 @@ const DashboardView: React.FC = () => {
               <span className="text-[#6a9975]">Library Utilization</span>
               <span className="font-bold text-[#22b864]">Active</span>
             </div>
-            <div className="mt-2 h-1.5 bg-[#e6faf0] rounded-full overflow-hidden">
+            <div className="mt-2 h-1 bg-[#e6faf0] rounded-full overflow-hidden">
               <motion.div 
                 initial={{ width: 0 }}
                 animate={{ width: "65%" }}
@@ -478,7 +490,7 @@ const StudentDashboard: React.FC = () => {
   const router = useRouter();
 
   const renderView = () => {
-    const sections = ["dashboard", "courses", "results", "purchases", "pdf-library", "notifications", "gpa-predictor", 'game-hub'];
+    const sections = ["dashboard", "courses", "results", "purchases", "pdf-library", "notifications", "gpa-predictor", 'game-hub', 'course-reps'];
     const screens = [
       <DashboardView />,
       <MyCourses />,
@@ -487,7 +499,8 @@ const StudentDashboard: React.FC = () => {
       <PdfLibrary />,
       <NotificationsPage />,
       <GPAPredictionEngine />,
-      <GameHub />
+      <GameHub />,
+      <CourseRepDashboard />
     ]
     
     const activeIndex = sections.indexOf(activeSection);
