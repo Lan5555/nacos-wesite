@@ -73,6 +73,7 @@ const NacosLogin: React.FC = () => {
       const res = await coreService.send('auth/login-user', payload);
       if(res.success){
         sessionStorage.setItem('token', res.data.access_token);
+        sessionStorage.setItem('student', JSON.stringify(res.data.user));
         showToast(res.message || 'Login successful','success');
         router.push('/pages/student-portal');
       }else{

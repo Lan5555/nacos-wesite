@@ -1,27 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-import { Bell, BookOpen, Check, Clock, GraduationCap } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Bell, BookOpen, Check, Clock, GraduationCap, LayoutGrid, List } from "lucide-react";
 import { useStudent } from "../layout";
+import CoreService from "@/app/hooks/core-service";
 
-// ============================================================================
-// API INTEGRATION AND INTERFACES (COMMENTED OUT UNTIL BACKEND IS READY)
-// ============================================================================
-// import CoreService from "@/app/hooks/core-service";
-//
-// interface Course {
-//   id: string;
-//   code: string;
-//   title: string;
-//   credits: number;
-//   semester: string;
-//   registered: boolean;
-// }
-// ============================================================================
+const coreService = new CoreService();
 
 // Custom StudentHeader component matching NacosHub aesthetic
-const StudentHeader: React.FC<{ 
-  title: string; 
+const StudentHeader: React.FC<{
+  title: string;
   unreadCount: number;
   onSearch: (query: string) => void;
 }> = ({ title, unreadCount, onSearch }) => {
@@ -67,104 +55,49 @@ const StudentHeader: React.FC<{
 };
 
 const MyCourses: React.FC = () => {
-  const { unreadCount = 0, registeredCourses = [], registerCourse } = useStudent();
+  const { unreadCount = 0, registeredCourses = [], registerCourse, profile, showToast } = useStudent();
   const [loadingCourseId, setLoadingCourseId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  // Fallback courses state matching the screenshots.
-  // DELETE / COMMENT these variables out once API fetching is enabled.
-  const [courses] = useState([
-    {
-      id: "csc401",
-      code: "CSC 401",
-      title: "Advanced Software Engineering",
-      credits: 3,
-      semester: "1st Semester",
-      creditHours: "3 Credit Hours",
-      description: "Design patterns, architecture, and agile methodologies",
-    },
-    {
-      id: "csc405",
-      code: "CSC 405",
-      title: "Machine Learning Fundamentals",
-      credits: 3,
-      semester: "1st Semester",
-      creditHours: "3 Credit Hours",
-      description: "Supervised learning, neural networks, and model evaluation",
-    },
-    {
-      id: "csc411",
-      code: "CSC 411",
-      title: "Cloud Computing",
-      credits: 2,
-      semester: "1st Semester",
-      creditHours: "2 Credit Hours",
-      description: "AWS, serverless, and distributed systems",
-    },
-    {
-      id: "ent402",
-      code: "ENT 402",
-      title: "Entrepreneurship",
-      credits: 2,
-      semester: "1st Semester",
-      creditHours: "2 Credit Hours",
-      description: "Business planning, funding, and innovation",
-    },
-    {
-      id: "csc498",
-      code: "CSC 498",
-      title: "Project Seminar",
-      credits: 3,
-      semester: "1st Semester",
-      creditHours: "3 Credit Hours",
-      description: "Final year project presentation and documentation",
-    },
-  ]);
+  const fetchCourses = useCallback(async () => {
+    if (!profile.level || !profile.department) return;
+    setLoading(true);
+    try {
+      // Fetch courses matching user's level and department
+      const res = await coreService.get(
+        `courses/find-all-courses?level=${profile.level}&department=${profile.department}`
+      );
+      if (res.success && Array.isArray(res.data)) {
+        setCourses(res.data);
+      } else {
+        setCourses([]);
+      }
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to fetch courses", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [profile.level, profile.department, showToast]);
+
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
 
   // Filter courses based on search query
   const filteredCourses = courses.filter(course => 
-    course.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    course.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     course.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.description.toLowerCase().includes(searchQuery.toLowerCase())
+    (course.description && course.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   // Calculate total credits from registered courses
   const totalRegisteredCredits = courses
     .filter(c => registeredCourses.includes(c.code))
-    .reduce((sum, c) => sum + c.credits, 0);
-
-  // ============================================================================
-  // COMMENTED API CALL EXAMPLE: UNCOMMENT THIS BLOCK TO INTEGRATE YOUR BACKEND
-  // ============================================================================
-  // const [apiCourses, setApiCourses] = useState<Course[]>([]);
-  //
-  // const fetchCourses = async () => {
-  //   const service = new CoreService();
-  //   try {
-  //     const response = await service.get("content/v1/courses/available");
-  //     if (response.success && response.data) {
-  //       // setApiCourses(response.data);
-  //     }
-  //   } catch (error) {
-  //     console.error("Failed to load courses from API:", error);
-  //   }
-  // };
-  //
-  // const handleRegisterApi = async (courseId: string, courseCode: string, credits: number) => {
-  //   setLoadingCourseId(courseId);
-  //   const service = new CoreService();
-  //   try {
-  //     const response = await service.send("content/v1/courses/register", { courseId });
-  //     if (response.success) {
-  //       registerCourse(courseCode, credits); // Updates UI context globally
-  //     }
-  //   } catch (error) {
-  //     console.error("Course registration failed:", error);
-  //   } finally {
-  //     setLoadingCourseId(null);
-  //   }
-  // };
-  // ============================================================================
+    .reduce((sum, c) => sum + (parseInt(c.credits) || 3), 0);
 
   const handleRegister = (courseId: string, courseCode: string, credits: number) => {
     // If you are using the API, call `handleRegisterApi` instead of this mock setup.
@@ -196,17 +129,6 @@ const MyCourses: React.FC = () => {
             </div>
             <div className="w-10 h-10 rounded-xl bg-[#e6faf0] flex items-center justify-center text-[#0f6e3f]">
               <BookOpen className="w-4 h-4" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white border border-[#d8eedd] rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-[#6a9975]">Registered</div>
-              <div className="font-serif text-2xl text-[#071a0d] mt-1">{registeredCourses.length}</div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-[#e6faf0] flex items-center justify-center text-[#22b864]">
-              <Check className="w-4 h-4" />
             </div>
           </div>
         </div>
@@ -247,18 +169,40 @@ const MyCourses: React.FC = () => {
               Available Courses
             </h3>
           </div>
-          
-          <div className="flex items-center gap-2 bg-[#f2fbf6] px-3 py-1.5 rounded-full border border-[#d8eedd]">
-            <span className="w-2 h-2 rounded-full bg-[#22b864] animate-pulse"></span>
-            <span className="text-[10px] font-bold text-[#3a6645] uppercase tracking-wider">Harmattan Semester 2026</span>
+          <div className="flex items-center bg-[#f2fbf6] p-1 rounded-xl border border-[#d8eedd]">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`p-1.5 rounded-lg transition-all ${
+                viewMode === "grid" ? "bg-white text-[#22b864] shadow-sm" : "text-[#6a9975]"
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`p-1.5 rounded-lg transition-all ${
+                viewMode === "list" ? "bg-white text-[#22b864] shadow-sm" : "text-[#6a9975]"
+              }`}
+            >
+              <List className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
         {/* Courses grid list */}
-        <div className="p-5 md:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 w-full">
-            {filteredCourses.map((course, idx) => {
+        <div className="p-5 md:p-6 min-h-75">
+          {loading ? (
+            <div className="py-20 flex flex-col items-center justify-center">
+              <div className="w-12 h-12 border-4 border-[#e6faf0] border-t-[#22b864] rounded-full animate-spin"></div>
+              <p className="mt-4 text-[#6a9975] font-medium">Loading your courses...</p>
+            </div>
+          ) : (
+            <>
+          {viewMode === "grid" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 w-full">
+              {filteredCourses.map((course, idx) => {
               const isRegistered = registeredCourses.includes(course.code);
+              const credits = parseInt(course.credits) || 3;
               const isLoading = loadingCourseId === course.id;
 
               return (
@@ -292,7 +236,7 @@ const MyCourses: React.FC = () => {
                           ? "bg-[#22b864]/10 text-[#0f6e3f] border-[#88e8b0]"
                           : "bg-[#f2fbf6] text-[#3a6645] border-[#d8eedd]"
                       }`}>
-                        {course.credits} cr.
+                        {credits} cr.
                       </span>
                     </div>
 
@@ -302,7 +246,7 @@ const MyCourses: React.FC = () => {
                         {course.code}
                       </span>
                       <h4 className="text-base font-bold text-[#071a0d] font-sans mt-1 leading-tight group-hover:text-[#0f6e3f] transition-colors">
-                        {course.title}
+                        {course.name}
                       </h4>
                       <p className="text-xs text-[#6a9975] mt-1.5 line-clamp-1">
                         {course.description}
@@ -314,40 +258,57 @@ const MyCourses: React.FC = () => {
                   <div className="flex items-center justify-between border-t border-[#d8eedd] pt-3.5 mt-3.5 relative z-10">
                     <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#6a9975]">
                       <Clock className="w-3.5 h-3.5 text-[#22b864]" />
-                      <span>{course.creditHours}</span>
+                      <span>{credits} Credit Hours</span>
                     </div>
-
-                    {/* Register button */}
-                    <button
-                      onClick={() => handleRegister(course.id, course.code, course.credits)}
-                      disabled={isRegistered || isLoading}
-                      className={`text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer px-4 py-2 ${
-                        isRegistered
-                          ? "bg-[#e6faf0] border border-[#88e8b0] text-[#0f6e3f] shadow-none cursor-default"
-                          : isLoading
-                          ? "bg-[#f2fbf6] text-[#6a9975] border border-[#d8eedd] cursor-wait"
-                          : "bg-linear-to-r from-[#0a4a20] to-[#0f6e3f] text-white hover:from-[#0f6e3f] hover:to-[#169150] shadow-sm hover:shadow-md active:scale-95"
-                      }`}
-                    >
-                      {isRegistered ? (
-                        <>
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Registered</span>
-                        </>
-                      ) : isLoading ? (
-                        <>
-                          <div className="w-3.5 h-3.5 border-2 border-[#6a9975] border-t-[#22b864] rounded-full animate-spin" />
-                          <span>Processing...</span>
-                        </>
-                      ) : (
-                        <span>Register</span>
-                      )}
-                    </button>
                   </div>
                 </div>
               );
-            })}
-          </div>
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 w-full">
+              {filteredCourses.map((course, idx) => {
+                const isRegistered = registeredCourses.includes(course.code);
+                const credits = parseInt(course.credits) || 3;
+
+                return (
+                  <div
+                    key={course.id}
+                    className={`group bg-white border rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between hover:shadow-md transition-all duration-300 ${
+                      isRegistered ? "border-[#88e8b0] bg-[#f2fbf6]/30" : "border-[#d8eedd] hover:border-[#88e8b0]"
+                    }`}
+                    style={{ animationName: 'fadeUp', animationDuration: '0.4s', animationTimingFunction: 'ease', animationFillMode: 'both', animationDelay: `${idx * 0.05}s` }}
+                  >
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        isRegistered ? "bg-[#22b864] text-white" : "bg-[#e6faf0] text-[#0f6e3f]"
+                      }`}>
+                        <BookOpen className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-bold text-[#071a0d] group-hover:text-[#0f6e3f] transition-colors">
+                            {course.name}
+                          </h4>
+                          <span className="text-[9px] font-bold text-[#22b864] bg-[#f2fbf6] px-2 py-0.5 rounded-full border border-[#d8eedd]">
+                            {course.code}
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#6a9975] line-clamp-1 mt-0.5">{course.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 mt-4 sm:mt-0">
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#6a9975]">
+                        <Clock className="w-3.5 h-3.5 text-[#22b864]" />
+                        <span>{credits} Credits</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Empty Search State */}
           {filteredCourses.length === 0 && (
@@ -359,24 +320,11 @@ const MyCourses: React.FC = () => {
               <p className="text-sm text-[#6a9975] mt-1">We couldn't find any courses matching "{searchQuery}"</p>
             </div>
           )}
+          </>
+          )}
         </div>
 
-        {/* Footer note - registration summary */}
-        <div className="border-t border-[#d8eedd] p-4 md:px-6 bg-[#f2fbf6]/30">
-          <div className="flex items-center justify-between text-xs text-[#6a9975]">
-            <div className="flex items-center gap-4">
-              <span><i className="fas fa-info-circle mr-1"></i> Registration closes Sept 25, 2026</span>
-              <span><i className="fas fa-chalkboard-user mr-1"></i> {registeredCourses.length} courses registered</span>
-            </div>
-            <span className="font-mono text-[10px] bg-white px-2 py-1 rounded-full border border-[#d8eedd]">
-              📚 {totalRegisteredCredits}/13 credits
-            </span>
-          </div>
-        </div>
       </div>
-
-      {/* Toast container */}
-      <div id="toast-root" className="fixed bottom-6 right-6 z-50"></div>
 
       <style jsx>{`
         @keyframes fadeUp {

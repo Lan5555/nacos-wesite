@@ -17,10 +17,12 @@ export interface NotificationItem {
 }
 
 export interface StudentProfile {
+  id?: number;
   name: string;
   level: string;
   department: string;
   matricNo: string;
+  email?: string;
   initials: string;
 }
 
@@ -58,13 +60,33 @@ export const useStudent = () => {
 
 const StudentLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // 1. Student Info State
-  const [profile] = useState<StudentProfile>({
-    name: "Chiamaka M.",
-    level: "400 Level",
-    department: "CS",
-    matricNo: "NAC/CS/1234",
-    initials: "CM",
+  const [profile, setProfile] = useState<StudentProfile>({
+    name: "Student",
+    level: "",
+    department: "",
+    matricNo: "",
+    initials: "S",
   });
+
+  useEffect(() => {
+    const storedStudent = sessionStorage.getItem('student');
+    if (storedStudent) {
+      try {
+        const studentData = JSON.parse(storedStudent);
+        setProfile({
+          id: studentData.id,
+          name: studentData.name,
+          level: studentData.level, // e.g. "100"
+          department: studentData.department,
+          matricNo: studentData.mat_no,
+          email: studentData.email,
+          initials: studentData.name ? studentData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().substring(0, 2) : "S",
+        });
+      } catch (error) {
+        console.error("Error loading session data:", error);
+      }
+    }
+  }, []);
 
   // 2. Notifications State (3 unread initially to match the badge in screenshots)
   const [notifications, setNotifications] = useState<NotificationItem[]>([

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { 
   GraduationCap, 
   RotateCw, 
+  Loader2,
   BarChart2, 
   Bell,
   Download, 
@@ -17,6 +18,7 @@ import {
   Search
 } from "lucide-react";
 import { useStudent } from "../layout";
+import CoreService from "@/app/hooks/core-service";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -30,12 +32,15 @@ interface ResultPDF {
   department: string;
   file: string;
   createdAt: string;
+  downloadUrl?: string;
   session: string;
   semester: string;
+  credits?: number;
   score?: number;
   grade?: string;
 }
 
+const coreService = new CoreService();
 // ============================================================================
 // STUDENT HEADER COMPONENT
 // ============================================================================
@@ -91,144 +96,23 @@ const StudentHeader: React.FC<{
 // ============================================================================
 
 const AcademicResults: React.FC = () => {
-  const { unreadCount = 3, showToast } = useStudent();
+  const { unreadCount = 3, showToast, profile } = useStudent();
   const [refreshing, setRefreshing] = useState(false);
   const [results, setResults] = useState<ResultPDF[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   
   // Filter states
-  const [selectedLevel, setSelectedLevel] = useState<number>(400);
+  const [selectedLevel, setSelectedLevel] = useState<number>(parseInt(profile.level) || 100);
   const [selectedSession, setSelectedSession] = useState<string>("2025/2026");
   const [selectedSemester, setSelectedSemester] = useState<string>("First Semester");
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("Computer Science");
+  const [selectedDepartment] = useState<string>(profile.department || "");
   
   // Available filter options
   const availableSessions = ["2025/2026", "2024/2025", "2023/2024", "2022/2023"];
   const availableSemesters = ["First Semester", "Second Semester"];
   const availableLevels = [100, 200, 300, 400];
   const availableDepartments = ["Computer Science", "Mathematics", "Physics", "Chemistry", "Biology", "Engineering"];
-
-  // Mock result PDFs data (would come from API in production)
-  const mockResults: ResultPDF[] = [
-    {
-      id: 1,
-      course: "Elementary Mathematics 1",
-      code: "MTH 101",
-      level: 100,
-      department: "Computer Science",
-      file: "#",
-      createdAt: "2026-05-19T11:33:48.414Z",
-      session: "2025/2026",
-      semester: "First Semester",
-      score: 85,
-      grade: "A"
-    },
-    {
-      id: 2,
-      course: "Elementary Mathematics 2",
-      code: "MTH 102",
-      level: 100,
-      department: "Computer Science",
-      file: "#",
-      createdAt: "2026-05-19T11:33:48.414Z",
-      session: "2025/2026",
-      semester: "First Semester",
-      score: 78,
-      grade: "B+"
-    },
-    {
-      id: 3,
-      course: "Introduction to Programming",
-      code: "CSC 101",
-      level: 100,
-      department: "Computer Science",
-      file: "#",
-      createdAt: "2026-05-19T11:33:48.414Z",
-      session: "2025/2026",
-      semester: "First Semester",
-      score: 92,
-      grade: "A"
-    },
-    {
-      id: 4,
-      course: "Discrete Mathematics",
-      code: "MTH 201",
-      level: 200,
-      department: "Computer Science",
-      file: "#",
-      createdAt: "2026-05-19T11:33:48.414Z",
-      session: "2025/2026",
-      semester: "First Semester",
-      score: 82,
-      grade: "A-"
-    },
-    {
-      id: 5,
-      course: "Data Structures",
-      code: "CSC 201",
-      level: 200,
-      department: "Computer Science",
-      file: "#",
-      createdAt: "2026-05-19T11:33:48.414Z",
-      session: "2025/2026",
-      semester: "First Semester",
-      score: 76,
-      grade: "B"
-    },
-    {
-      id: 6,
-      course: "Advanced Software Engineering",
-      code: "CSC 401",
-      level: 400,
-      department: "Computer Science",
-      file: "#",
-      createdAt: "2026-05-19T11:33:48.414Z",
-      session: "2025/2026",
-      semester: "First Semester",
-      score: 82,
-      grade: "A-"
-    },
-    {
-      id: 7,
-      course: "Machine Learning",
-      code: "CSC 405",
-      level: 400,
-      department: "Computer Science",
-      file: "#",
-      createdAt: "2026-05-19T11:33:48.414Z",
-      session: "2025/2026",
-      semester: "First Semester",
-      score: 78,
-      grade: "B+"
-    },
-    {
-      id: 8,
-      course: "Cloud Computing",
-      code: "CSC 411",
-      level: 400,
-      department: "Computer Science",
-      file: "#",
-      createdAt: "2026-05-19T11:33:48.414Z",
-      session: "2025/2026",
-      semester: "First Semester",
-      score: 80,
-      grade: "A-"
-    },
-    {
-      id: 9,
-      course: "Entrepreneurship",
-      code: "ENT 402",
-      level: 400,
-      department: "Computer Science",
-      file: "#",
-      createdAt: "2026-05-19T11:33:48.414Z",
-      session: "2025/2026",
-      semester: "First Semester",
-      score: 74,
-      grade: "B"
-    },
-  ];
 
   // Filter results based on selected filters
   const filteredResults = useMemo(() => {
@@ -247,21 +131,17 @@ const AcademicResults: React.FC = () => {
 
   // Calculate statistics
   const stats = useMemo(() => {
-    const scores = filteredResults.map(r => r.score || 0);
-    const totalScore = scores.reduce((sum, s) => sum + s, 0);
-    const averageScore = scores.length > 0 ? totalScore / scores.length : 0;
-    const gpa = averageScore / 20; // Convert to 5.0 scale (approx)
-    const totalCredits = filteredResults.length * 3; // Assuming 3 credits per course
+    const totalCourses = filteredResults.length;
+    const totalCredits = totalCourses * 3;
     const gradePoints = filteredResults.reduce((sum, r) => {
-      const gradeMap: Record<string, number> = { 'A': 5.0, 'A-': 4.5, 'B+': 4.0, 'B': 3.5, 'B-': 3.0, 'C+': 2.5, 'C': 2.0, 'D': 1.0, 'F': 0 };
+      const gradeMap: Record<string, number> = { 'A': 5.0, 'B': 4.0, 'C': 3.0, 'D': 2.0, 'E': 1.0, 'F': 0 };
       return sum + (gradeMap[r.grade || 'F'] || 0) * 3;
     }, 0);
-    const calculatedGPA = totalCredits > 0 ? gradePoints / totalCredits : 0;
+    const gpa = totalCredits > 0 ? gradePoints / totalCredits : 0;
     
     return {
-      averageScore: averageScore.toFixed(1),
-      totalCourses: filteredResults.length,
-      gpa: calculatedGPA.toFixed(2),
+      totalCourses,
+      gpa: gpa.toFixed(2),
       totalCredits,
     };
   }, [filteredResults]);
@@ -277,32 +157,35 @@ const AcademicResults: React.FC = () => {
 
   const classification = getClassification(parseFloat(stats.gpa));
 
-  // Fetch results (would call API in production)
-  const fetchResults = async () => {
+  // Fetch results from API
+  const fetchResults = React.useCallback(async () => {
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setResults(mockResults);
+    try {
+      const res = await coreService.get(
+        `results/find-all-results?level=${selectedLevel}&department=${selectedDepartment}`
+      );
+      if (res.success && Array.isArray(res.data)) {
+        setResults(res.data);
+      } else {
+        setResults([]);
+      }
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to fetch results", "error");
+    } finally {
       setLoading(false);
-    }, 800);
-  };
+    }
+  }, [selectedLevel, selectedDepartment, showToast]);
 
   // Handle PDF preview
   const handlePreview = async (result: ResultPDF) => {
-    try {
-      showToast(`Opening ${result.course} result preview...`, "info");
-      
-      // In production, this would open the actual file URL
-      // For now, simulate opening
-      setTimeout(() => {
-        window.open(result.file, '_blank');
-      }, 500);
-      
-    } catch (error) {
-      showToast("Failed to preview result. Please try again.", "error");
+    const url = result.downloadUrl || result.file;
+    if (url && url !== "#") {
+      window.open(url, '_blank');
+    } else {
+      showToast("Result file not available", "error");
     }
   };
-
   // Handle batch download
   const handleBatchDownload = () => {
     if (filteredResults.length === 0) {
@@ -328,7 +211,12 @@ const AcademicResults: React.FC = () => {
   // Initial load
   useEffect(() => {
     fetchResults();
-  }, []);
+  }, [fetchResults]);
+
+  // Update selected level when profile loads
+  useEffect(() => {
+    if (profile.level) setSelectedLevel(parseInt(profile.level));
+  }, [profile.level]);
 
   return (
     <div className="flex flex-col gap-6 md:gap-8 flex-1 pb-10 max-w-7xl mx-auto w-full">
@@ -381,13 +269,11 @@ const AcademicResults: React.FC = () => {
           <div>
             <label className="block text-xs font-semibold text-[#6a9975] mb-1">Department</label>
             <select
-              value={selectedDepartment}
-              onChange={(e) => setSelectedDepartment(e.target.value)}
-              className="w-full p-2 border border-[#d8eedd] rounded-lg text-sm bg-white focus:outline-none focus:border-[#22b864]"
+              disabled
+              value={profile.department}
+              className="w-full p-2 border border-[#d8eedd] rounded-lg text-sm bg-[#f9f9f9] text-[#6a9975] cursor-not-allowed outline-none"
             >
-              {availableDepartments.map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
+              <option value={profile.department}>{profile.department}</option>
             </select>
           </div>
         </div>
@@ -400,8 +286,8 @@ const AcademicResults: React.FC = () => {
           <div className="text-2xl font-bold text-[#071a0d] font-serif mt-1">{stats.totalCourses}</div>
         </div>
         <div className="bg-white border border-[#d8eedd] rounded-xl p-4 text-center">
-          <div className="text-[10px] font-bold uppercase text-[#6a9975]">Average Score</div>
-          <div className="text-2xl font-bold text-[#071a0d] font-serif mt-1">{stats.averageScore}%</div>
+          <div className="text-[10px] font-bold uppercase text-[#6a9975]">Total Credits</div>
+          <div className="text-2xl font-bold text-[#071a0d] font-serif mt-1">{stats.totalCredits}</div>
         </div>
         <div className="bg-white border border-[#d8eedd] rounded-xl p-4 text-center">
           <div className="text-[10px] font-bold uppercase text-[#6a9975]">Semester GPA</div>
@@ -467,8 +353,8 @@ const AcademicResults: React.FC = () => {
                 <tr>
                   <th className="text-left p-4 text-xs font-bold text-[#6a9975] uppercase tracking-wider">Course Code</th>
                   <th className="text-left p-4 text-xs font-bold text-[#6a9975] uppercase tracking-wider">Course Title</th>
-                  <th className="text-center p-4 text-xs font-bold text-[#6a9975] uppercase tracking-wider">Grade</th>
-                  <th className="text-center p-4 text-xs font-bold text-[#6a9975] uppercase tracking-wider">Score</th>
+                  <th className="text-center p-4 text-xs font-bold text-[#6a9975] uppercase tracking-wider">Session</th>
+                  <th className="text-center p-4 text-xs font-bold text-[#6a9975] uppercase tracking-wider">Semester</th>
                   <th className="text-center p-4 text-xs font-bold text-[#6a9975] uppercase tracking-wider">Action</th>
                 </tr>
               </thead>
@@ -492,24 +378,14 @@ const AcademicResults: React.FC = () => {
                       <span className="text-sm font-medium text-[#071a0d]">{result.course}</span>
                     </td>
                     <td className="p-4 text-center">
-                      <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold ${
-                        result.grade?.startsWith('A') ? 'bg-[#22b864]/20 text-[#22b864]' :
-                        result.grade?.startsWith('B') ? 'bg-[#4fd68a]/20 text-[#0f6e3f]' :
-                        'bg-[#c8a84b]/20 text-[#c8a84b]'
-                      }`}>
-                        {result.grade}
+                      <span className="text-xs font-bold text-[#071a0d] bg-[#f2fbf6] px-2.5 py-1 rounded-full border border-[#d8eedd]">
+                        {result.session}
                       </span>
                     </td>
                     <td className="p-4 text-center">
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-sm font-bold text-[#071a0d]">{result.score}%</span>
-                        <div className="w-16 h-1.5 bg-[#e6faf0] rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-[#22b864] rounded-full"
-                            style={{ width: `${result.score}%` }}
-                          ></div>
-                        </div>
-                      </div>
+                      <span className="text-xs font-semibold text-[#6a9975]">
+                        {result.semester}
+                      </span>
                     </td>
                     <td className="p-4 text-center">
                       <button
