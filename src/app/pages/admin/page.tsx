@@ -76,24 +76,27 @@ type Rep = {
 type Staff = {
   id: string;
   name: string;
-  role: string;
-  dept: string;
-  status: 'Active' | 'Inactive';
+  position?: string;
+  department?: string;
+  email?: string;
+  isStaff: boolean;
 };
 
 type FinanceTransaction = {
-  id: string;
-  desc: string;
+  transaction_id: string;
+  description: string;
   amount: string;
   date: string;
-  paidBy: string;
+  paid_by: string;
 };
 
 type AdminEvent = {
-  id: string;
+  id: number;
   title: string;
-  date: string;
-  status: 'Pending Approval' | 'Approved' | 'Rejected';
+  content: string;
+  isActive: boolean;
+  createdAt: string;
+  venue: string;
 };
 
 type ActivityLogEntry = {
@@ -118,20 +121,17 @@ export type StudentData = {
 
 const service:CoreService = new CoreService();
 // --- Initial Data ---
-const initialStaff: Staff[] = [
-  { id: "STF101", name: "Dr. Okonkwo", role: "Dean of Students", dept: "Admin", status: "Active" },
-  { id: "STF102", name: "Prof. Adeyemi", role: "Course Advisor", dept: "Computer Science", status: "Active" },
-  { id: "STF103", name: "Mrs. Eze", role: "Financial Secretary", dept: "Finance", status: "Active" },
+const initialStudents: Student[] = [
+  { id: '1', matric: "NAC/CS/2101", name: "Ada Eze", level: 400, dept: "Computer Science", isRep: false },
+  { id: '2', matric: "NAC/CS/2102", name: "Chidi Obi", level: 300, dept: "Computer Science", isRep: true },
+  { id: '3', matric: "NAC/EE/2105", name: "Bola Yusuf", level: 400, dept: "Electrical Eng", isRep: false },
+  { id: '4', matric: "NAC/CS/2108", name: "Ifeanyi Nwosu", level: 400, dept: "Computer Science", isRep: true },
 ];
 
-const initialTransactions: FinanceTransaction[] = [
-  { id: "T001", desc: "Annual Dues – 400 Level", amount: "₦15,000", date: "Sept 1, 2026", paidBy: "Ada Eze" },
-  { id: "T002", desc: "NACOS Merch", amount: "₦8,500", date: "Sept 5, 2026", paidBy: "Chidi Obi" },
-];
-
-const initialEvents: AdminEvent[] = [
-  { id: "E1", title: "Tech Summit 2026", date: "Oct 15, 2026", status: "Pending Approval" },
-  { id: "E2", title: "Green Coding Hackathon", date: "Oct 28, 2026", status: "Approved" },
+const initialReps: Rep[] = [
+  { id: 1, name: "Chidi Obi", dept: "Computer Science", level: 300, contact: "chidi@nacos.edu", status: "Active" },
+  { id: 2, name: "Ifeanyi Nwosu", dept: "Computer Science", level: 400, contact: "ifeanyi@nacos.edu", status: "Active" },
+  { id: 3, name: "Fatima Bello", dept: "Mass Comm", level: 300, contact: "fatima@nacos.edu", status: "Active" },
 ];
 
 const initialActivityLog: ActivityLogEntry[] = [
@@ -223,12 +223,14 @@ const AdminPage: React.FC = () => {
   const [financeTypeFilter, setFinanceTypeFilter] = useState('all');
   
   // Data States
-  const [students, setStudents] = useState<StudentData[]>([]);
-  const [student, setStudent] = useState<StudentData>();
-  const [reps, setReps] = useState<StudentData[]>([]);
-  const [staff, setStaff] = useState<Staff[]>(initialStaff);
-  const [transactions, setTransactions] = useState<FinanceTransaction[]>(initialTransactions);
-  const [events, setEvents] = useState<AdminEvent[]>(initialEvents);
+  const [students, setStudents] = useState<Student[]>(initialStudents);
+  const [reps, setReps] = useState<Rep[]>(initialReps);
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [staffLoading, setStaffLoading] = useState(false);
+  const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
+  const [events, setEvents] = useState<AdminEvent[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   const [adminData, setAdminData] = useState<Partial<Exco>>({});
   const [fetchAmount, setFetchAmount] = useState<Record<string,number>>({
@@ -363,77 +365,204 @@ const AdminPage: React.FC = () => {
   };
 
   const handleAddStaff = () => {
-    setIsSubmitting(true);
-    if (newStaff.id && newStaff.name) {
-      const staffMember: Staff = {
-        id: newStaff.id,
-        name: newStaff.name,
-        role: newStaff.role || 'Staff',
-        dept: newStaff.dept || 'General',
-        status: 'Active',
-      };
-      setStaff(prev => [...prev, staffMember]);
-      addLog('Add Staff', `New staff added: ${newStaff.name}`);
-      showToast('Staff member added');
-      closeModal('addStaff');
-    } else {
-      showToast('Fill required fields');
-    }
-    setIsSubmitting(false);
-  };
+  if (newStaff.id && newStaff.name) {
+    const staffMember: Staff = {
+      id: newStaff.id,
+      name: newStaff.name,
+      position: newStaff.role || 'Staff',
+      department: newStaff.dept || 'General',
+      isStaff: true,
+    };
 
-  const handleRecordPayment = () => {
-    if (newPayment.desc && newPayment.amount) {
-      setIsSubmitting(true);
-      const transaction: FinanceTransaction = {
-        id: `T${Date.now()}`,
-        desc: newPayment.desc,
-        amount: newPayment.amount,
-        date: new Date().toLocaleDateString('en-GB'),
-        paidBy: newPayment.paidBy || 'Anonymous',
-      };
-      setTransactions(prev => [transaction, ...prev]);
-      addLog('Record Payment', `Payment recorded: ${newPayment.amount} from ${transaction.paidBy}`);
-      showToast('Payment recorded');
-      closeModal('recordPayment');
-    } else {
-      showToast('Fill required fields');
-    }
-    setIsSubmitting(false);
-  };
+    setStaff(prev => [...prev, staffMember]);
 
-  const handleCreateEvent = () => {
-    if (newEvent.title) {
-      setIsSubmitting(true);
-      const event: AdminEvent = {
-        id: `E${Date.now()}`,
+    addLog('Add Staff', `New staff added: ${newStaff.name}`);
+    showToast('Staff member added');
+    closeModal('addStaff');
+  } else {
+    showToast('Fill required fields');
+  }
+};
+
+  
+const handleRecordPayment = async () => {
+  if (newPayment.desc && !isNaN(Number(newPayment.amount))) {
+    try {
+      const res = await service.send('dues/log', {
+        description: newPayment.desc,
+        amount: Number(newPayment.amount),
+        paid_by: newPayment.paidBy || 'Anonymous',
+      });
+      if (res.success) {
+        await fetchTransactions();
+        addLog('Record Payment', `Payment recorded: ${newPayment.amount} from ${newPayment.paidBy}`);
+        showToast('Payment recorded');
+        closeModal('recordPayment');
+      } else {
+        showToast(res.message || 'Failed to record payment');
+      }
+    } catch {
+      showToast('Failed to record payment');
+    }
+  } else {
+    showToast('Fill required fields');
+  }
+};
+
+const handleDeleteTransaction = async (transaction_id: string) => {
+  if (window.confirm('Are you sure you want to delete this transaction?')) {
+    try {
+      const res = await service.delete(`dues/delete/${transaction_id}`);
+      if (res.success) {
+        await fetchTransactions();
+        showToast('Transaction deleted');
+      } else {
+        showToast(res.message || 'Failed to delete');
+      }
+    } catch {
+      showToast('Failed to delete transaction');
+    }
+  }
+};
+
+const fetchEvents = async () => {
+  setEventsLoading(true);
+  try {
+    const res = await service.get('events/find-all-events?date=2026-05-13');
+    if (res.success) {
+      setEvents(res.data ?? []);
+    } else {
+      showToast(res.message);
+    }
+  } catch {
+    showToast('Failed to load events');
+  } finally {
+    setEventsLoading(false);
+  }
+};
+
+const fetchStaff = async () => {
+  setStaffLoading(true);
+
+  try {
+    const res = await service.get('admin/find-all?isStaff=true');
+
+    if (res.success) {
+      const formattedStaff = (res.data ?? [])
+        .filter((a: any) => a.isStaff === true)
+        .map((a: any) => ({
+          id: a.id,
+          name: a.name || a.full_name,
+          position: a.position || a.role,
+          department: a.department || a.dept,
+          email: a.email,
+          isStaff: a.isStaff,
+        }));
+
+      setStaff(formattedStaff);
+    } else {
+      showToast(res.message);
+    }
+  } catch (e) {
+    console.log(e);
+    showToast('Failed to load staff');
+  } finally {
+    setStaffLoading(false);
+  }
+};
+
+const handleRemoveStaff = async (id: string) => {
+  if (window.confirm('Are you sure you want to remove this staff member?')) {
+    try {
+      const res = await service.patch(`admin/update/${id}`, {
+        isStaff: false,
+      });
+
+      if (res.success) {
+        await fetchStaff();
+
+        showToast('Staff member removed');
+
+        addLog(
+          'Remove Staff',
+          `Staff member ${id} removed`
+        );
+      } else {
+        showToast(res.message || 'Failed to remove staff');
+      }
+    } catch {
+      showToast('Failed to remove staff');
+    }
+  }
+};
+
+useEffect(() => {
+  loadAdminData();
+  fetchActivityLogs();
+  cleanupOldActivityLogs();
+  fetchTransactions();
+  fetchEvents();   // ← add
+  fetchStaff();    // ← add
+}, []);
+
+
+const handleCreateEvent = async () => {
+  if (newEvent.title) {
+    try {
+      const res = await service.send('events/create-event', {
         title: newEvent.title,
-        date: newEvent.date || 'TBC',
-        status: 'Pending Approval',
-      };
-      setEvents(prev => [...prev, event]);
-      addLog('Create Event', `New event created: ${newEvent.title}`);
-      showToast('Event created');
-      closeModal('createEvent');
-    } else {
-      showToast('Enter event title');
+        content: newEvent.body,
+        venue: '',
+        date: new Date(newEvent.date).toISOString(),
+        isActive: true,
+      });
+      if (res.success) {
+        await fetchEvents();
+        addLog('Create Event', `New event created: ${newEvent.title}`);
+        showToast('Event created');
+        closeModal('createEvent');
+      } else {
+        showToast(res.message || 'Failed to create event');
+      }
+    } catch {
+      showToast('Failed to create event');
     }
-    setIsSubmitting(false);
-  };
+  } else {
+    showToast('Enter event title');
+  }
+};
 
-  const handleApproveEvent = (eventId: string) => {
-    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: 'Approved' } : e));
-    const event = events.find(e => e.id === eventId);
-    addLog('Approve Event', `Event "${event?.title}" approved`);
-    showToast('Event approved');
-  };
 
-  const handleDeleteEvent = (eventId: string) => {
-    const event = events.find(e => e.id === eventId);
-    setEvents(prev => prev.filter(e => e.id !== eventId));
-    addLog('Delete Event', `Event "${event?.title}" removed`);
-    showToast('Event removed');
-  };
+const handleApproveEvent = async (eventId: number) => {
+  try {
+    const res = await service.patch(`events/update-event?event_id=${eventId}`, {
+      isActive: true,
+    });
+    if (res.success) {
+      await fetchEvents();
+      showToast('Event approved');
+    } else {
+      showToast(res.message || 'Failed to approve event');
+    }
+  } catch {
+    showToast('Failed to approve event');
+  }
+};
+
+const handleDeleteEvent = async (eventId: number) => {
+  try {
+    const res = await service.delete(`events/delete-event?event_id=${eventId}`);
+    if (res.success) {
+      await fetchEvents();
+      showToast('Event removed');
+    } else {
+      showToast(res.message || 'Failed to delete event');
+    }
+  } catch {
+    showToast('Failed to delete event');
+  }
+};
+
 
   const handleAppointRepFromModal = (selectedStudentId: StudentData) => {
     //const student = students.find(s => s.id === selectedStudentId);
@@ -472,6 +601,29 @@ const AdminPage: React.FC = () => {
       
     }
   }
+
+  const fetchTransactions = async () => {
+  setTransactionsLoading(true);
+  try {
+    const res = await service.get('dues/find-all');
+    if (res.success) {
+      setTransactions(res.data ?? []);
+    } else {
+      showToast(res.message);
+    }
+  } catch (e: any) {
+    showToast('Failed to load transactions');
+  } finally {
+    setTransactionsLoading(false);
+  }
+};
+
+useEffect(() => {
+  loadAdminData();
+  fetchActivityLogs();
+  cleanupOldActivityLogs();
+  fetchTransactions(); // ← add this
+}, []);
 
   const fetchActivityLogs = async() => {
     setLogsLoading(true);
@@ -693,117 +845,168 @@ const AdminPage: React.FC = () => {
   );
 
   const renderStaffTable = () => (
-    <div className="overflow-x-auto rounded-xl border border-slate-200">
+  <div className="overflow-x-auto rounded-xl border border-slate-200">
+    {staffLoading ? (
+      <div className="flex flex-col items-center justify-center py-10 gap-2">
+        <RefreshCw className="w-6 h-6 text-emerald-600 animate-spin" />
+        <p className="text-xs text-slate-500 font-medium">Loading staff...</p>
+      </div>
+    ) : (
       <table className="w-full">
         <thead className="bg-slate-50 border-b border-slate-200">
           <tr>
             <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Staff ID</th>
             <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Full Name</th>
-            <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Role</th>
+            <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Position</th>
             <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Department</th>
-            <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+            <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Email</th>
+            <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
+
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200 bg-white">
-          {staff.map((member, idx) => (
+          {staff.length === 0 ? (
+            <tr>
+              <td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-400">No staff found</td>
+            </tr>
+          ) : staff.map((member) => (
             <tr key={member.id} className="hover:bg-slate-50 transition-colors">
               <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-emerald-600">{member.id}</td>
               <td className="px-6 py-4 whitespace-nowrap font-semibold text-slate-900">{member.name}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{member.role}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{member.dept}</td>
-              <td className="px-6 py-4 whitespace-nowrap"><span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-tight border border-emerald-100">{member.status}</span></td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{member.position || '—'}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{member.department || '—'}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{member.email || '—'}</td>
+              <td className="px-6 py-4 whitespace-nowrap">
+  <button
+    onClick={() => handleRemoveStaff(member.id)}
+    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition-all"
+  >
+    <UserMinus size={12} /> Remove
+  </button>
+</td>
             </tr>
           ))}
         </tbody>
       </table>
-    </div>
-  );
+    )}
+  </div>
+);
 
   const renderFinanceLogs = () => (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-50">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-          <input type="text" placeholder="Search by description or payer..." value={financeSearch} onChange={(e) => setFinanceSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-        </div>
-        <select value={financeTypeFilter} onChange={(e) => setFinanceTypeFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
-          <option value="all">All Transactions</option>
-          <option value="Dues">Annual Dues</option>
-          <option value="Merch">Merchandise</option>
-          <option value="Event">Events</option>
-        </select>
+  <div className="space-y-4">
+    <div className="flex flex-wrap gap-3 items-center">
+      <div className="relative flex-1 min-w-50">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+        <input type="text" placeholder="Search by description or payer..." value={financeSearch} onChange={(e) => setFinanceSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
       </div>
+      <select value={financeTypeFilter} onChange={(e) => setFinanceTypeFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        <option value="all">All Transactions</option>
+        <option value="Dues">Annual Dues</option>
+        <option value="Merch">Merchandise</option>
+        <option value="Event">Events</option>
+      </select>
+    </div>
 
-    <div className="overflow-x-auto rounded-xl border border-slate-200 mb-6">
-      <table className="w-full">
-        <thead className="bg-slate-50 border-b border-slate-200">
-          <tr>
-            <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Transaction ID</th>
-            <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Description</th>
-            <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
-            <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
-            <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Paid By</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-200 bg-white">
-          {transactions.filter(tx => {
-            const matchesSearch = tx.desc.toLowerCase().includes(financeSearch.toLowerCase()) || tx.paidBy.toLowerCase().includes(financeSearch.toLowerCase());
-            const matchesType = financeTypeFilter === 'all' || tx.desc.toLowerCase().includes(financeTypeFilter.toLowerCase());
-            return matchesSearch && matchesType;
-          }).map((tx, idx) => (
-            <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-emerald-600">{tx.id}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{tx.desc}</td>
-              <td className="px-6 py-4 whitespace-nowrap font-mono font-bold text-emerald-600">{tx.amount}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{tx.date}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{tx.paidBy}</td>
+    {transactionsLoading ? (
+      <div className="flex flex-col items-center justify-center py-10 gap-2">
+        <RefreshCw className="w-6 h-6 text-emerald-600 animate-spin" />
+        <p className="text-xs text-slate-500 font-medium">Loading transactions...</p>
+      </div>
+    ) : (
+      <div className="overflow-x-auto rounded-xl border border-slate-200 mb-6">
+        <table className="w-full">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Transaction ID</th>
+              <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Description</th>
+              <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
+              <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+              <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Paid By</th>
+              <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-    </div>
-  );
+          </thead>
+          <tbody className="divide-y divide-slate-200 bg-white">
+            {transactions.filter(tx => {
+              const matchesSearch = tx.description.toLowerCase().includes(financeSearch.toLowerCase()) || tx.paid_by.toLowerCase().includes(financeSearch.toLowerCase());
+              const matchesType = financeTypeFilter === 'all' || tx.description.toLowerCase().includes(financeTypeFilter.toLowerCase());
+              return matchesSearch && matchesType;
+            }).map((tx) => (
+              <tr key={tx.transaction_id} className="hover:bg-slate-50 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-emerald-600">{tx.transaction_id.slice(0, 8)}...</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{tx.description}</td>
+                <td className="px-6 py-4 whitespace-nowrap font-mono font-bold text-emerald-600">₦{tx.amount}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                  {new Date(tx.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{tx.paid_by}</td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <button
+                    onClick={() => handleDeleteTransaction(tx.transaction_id)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition-all"
+                  >
+                    <Trash2 size={12} /> Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {transactions.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-6 py-10 text-center text-sm text-slate-400">No transactions found</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+);
 
   const renderEvents = () => (
-    <div className="space-y-3">
-      {events.length === 0 ? (
-        <div className="text-center py-10 text-emerald-500">No events yet</div>
-      ) : (
-        events.map(event => (
-          <div key={event.id} className="flex justify-between items-center p-4 border-b border-emerald-100 last:border-0">
-            <div>
-              <div className="font-semibold text-emerald-900">{event.title}</div>
-              <div className="text-sm text-emerald-500 flex items-center gap-1 mt-1">
-                <Calendar size={12} /> {event.date}
-              </div>
-              <div className="mt-2">
-                {event.status === 'Approved' ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-xs font-semibold">
-                    <Check size={10} /> Approved
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
-                    <Hourglass size={10} /> Pending Approval
-                  </span>
-                )}
-              </div>
+  <div className="space-y-3">
+    {eventsLoading ? (
+      <div className="flex flex-col items-center justify-center py-10 gap-2">
+        <RefreshCw className="w-6 h-6 text-emerald-600 animate-spin" />
+        <p className="text-xs text-slate-500 font-medium">Fetching events...</p>
+      </div>
+    ) : events.length === 0 ? (
+      <div className="text-center py-10 text-emerald-500">No events yet</div>
+    ) : (
+      events.map(event => (
+        <div key={event.id} className="flex justify-between items-center p-4 border-b border-emerald-100 last:border-0">
+          <div>
+            <div className="font-semibold text-emerald-900">{event.title}</div>
+            <div className="text-sm text-emerald-500 mt-1">{event.content}</div>
+            <div className="text-sm text-emerald-500 flex items-center gap-1 mt-1">
+              <Calendar size={12} /> {new Date(event.createdAt).toLocaleDateString('en-GB')}
+              {event.venue && <span> · {event.venue}</span>}
             </div>
-            <div className="flex gap-2">
-              {event.status !== 'Approved' && (
-                <button onClick={() => handleApproveEvent(event.id)} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-xs font-semibold hover:opacity-90 transition shadow-sm">
-                  <CheckCircle2 size={12} /> Approve
-                </button>
+            <div className="mt-2">
+              {event.isActive ? (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-xs font-semibold">
+                  <Check size={10} /> Active
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
+                  <Hourglass size={10} /> Inactive
+                </span>
               )}
-              <button onClick={() => handleDeleteEvent(event.id)} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100 transition">
-                <Trash2 size={12} /> Delete
-              </button>
             </div>
           </div>
-        ))
-      )}
-    </div>
-  );
+          <div className="flex gap-2">
+            {!event.isActive && (
+              <button onClick={() => handleApproveEvent(event.id)} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-xs font-semibold hover:opacity-90 transition shadow-sm">
+                <CheckCircle2 size={12} /> Activate
+              </button>
+            )}
+            <button onClick={() => handleDeleteEvent(event.id)} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100 transition">
+              <Trash2 size={12} /> Delete
+            </button>
+          </div>
+        </div>
+      ))
+    )}
+  </div>
+);
 
   const renderActivity = () => (
     <div className="space-y-4">
@@ -1268,11 +1471,7 @@ const AdminPage: React.FC = () => {
           <div><label className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Full Name</label><input type="text" value={newStaff.name} onChange={e => setNewStaff(prev => ({ ...prev, name: e.target.value }))} className="w-full mt-1 px-4 py-2 rounded-xl border border-emerald-200 bg-emerald-50/30 focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="e.g. Dr. Amaka" /></div>
           <div><label className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Role</label><input type="text" value={newStaff.role} onChange={e => setNewStaff(prev => ({ ...prev, role: e.target.value }))} className="w-full mt-1 px-4 py-2 rounded-xl border border-emerald-200 bg-emerald-50/30 focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="e.g. Course Advisor" /></div>
           <div><label className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Department</label><input type="text" value={newStaff.dept} onChange={e => setNewStaff(prev => ({ ...prev, dept: e.target.value }))} className="w-full mt-1 px-4 py-2 rounded-xl border border-emerald-200 bg-emerald-50/30 focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="e.g. Computer Science" /></div>
-          <div className="flex justify-end gap-3 pt-4">
-            <button disabled={isSubmitting} onClick={() => closeModal('addStaff')} className="px-4 py-2 rounded-full border border-emerald-200 text-emerald-600 text-sm font-semibold hover:bg-emerald-50 transition">Cancel</button>
-            <button disabled={isSubmitting} onClick={handleAddStaff} className="px-4 py-2 rounded-full bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white text-sm font-semibold hover:opacity-90 transition shadow-sm flex items-center gap-2">
-              {isSubmitting && <RefreshCw size={14} className="animate-spin" />}
-              Add Staff</button></div>
+  
         </div>
       </Modal>
 

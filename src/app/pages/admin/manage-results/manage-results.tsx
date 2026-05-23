@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+'use client'
+import React, { useState, useEffect } from 'react';
 import {
   Upload, FileText, X, Search, Download, CheckCircle, AlertCircle,
-  GraduationCap, BookOpen, Users, Calendar, BarChart3, Filter,
-  ChevronDown, Eye, Trash2, RefreshCw, Plus, School
+  GraduationCap, RefreshCw, Plus, School, Loader2, Trash2, Eye
 } from 'lucide-react';
+import CoreService from "@/app/hooks/core-service";
 
-// Schema based on your requirement
 interface ResultUpload {
   id: string;
   course: string;
@@ -13,111 +13,19 @@ interface ResultUpload {
   level: number;
   department: string;
   session: string;
-  semester: 'First' | 'Second';
-  document: {
-    name: string;
-    url: string;
-    size: number;
-    type: string;
-    uploadedAt: string;
-  };
-  uploadedBy: string;
-  status: 'Published' | 'Draft';
-  remarks?: string;
+  semester: string;
+  file: string;
+  createdAt: string;
 }
 
-// Mock initial data
-const initialResults: ResultUpload[] = [
-  {
-    id: '1',
-    course: 'Elementary Mathematics 1',
-    code: 'MTH 101',
-    level: 100,
-    department: 'Computer Science',
-    session: '2024/2025',
-    semester: 'First',
-    document: {
-      name: 'MTH101_Elementary_Mathematics_Result.pdf',
-      url: '#',
-      size: 1240000,
-      type: 'application/pdf',
-      uploadedAt: '2025-01-15T10:30:00'
-    },
-    uploadedBy: 'Dr. Adeyemi O.',
-    status: 'Published'
-  },
-  {
-    id: '2',
-    course: 'Introduction to Programming',
-    code: 'CSC 102',
-    level: 100,
-    department: 'Computer Science',
-    session: '2024/2025',
-    semester: 'First',
-    document: {
-      name: 'CSC102_Programming_Results.pdf',
-      url: '#',
-      size: 980000,
-      type: 'application/pdf',
-      uploadedAt: '2025-01-18T14:15:00'
-    },
-    uploadedBy: 'Prof. Okonkwo C.',
-    status: 'Published'
-  },
-  {
-    id: '3',
-    course: 'Discrete Mathematics',
-    code: 'MTH 201',
-    level: 200,
-    department: 'Mathematics',
-    session: '2024/2025',
-    semester: 'First',
-    document: {
-      name: 'MTH201_Discrete_Math_Results.xlsx',
-      url: '#',
-      size: 2100000,
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      uploadedAt: '2025-01-20T09:45:00'
-    },
-    uploadedBy: 'Dr. Eze N.',
-    status: 'Draft'
-  },
-  {
-    id: '4',
-    course: 'Elementary Mathematics 1',
-    code: 'MTH 101',
-    level: 100,
-    department: 'Software Engineering',
-    session: '2024/2025',
-    semester: 'First',
-    document: {
-      name: 'MTH101_SE_Results.pdf',
-      url: '#',
-      size: 1180000,
-      type: 'application/pdf',
-      uploadedAt: '2025-01-22T11:20:00'
-    },
-    uploadedBy: 'Dr. Adeyemi O.',
-    status: 'Published'
-  }
-];
-
 const departments = [
-  'Computer Science',
-  'Software Engineering',
-  'Information Technology',
-  'Cyber Security',
-  'Data Science',
-  'Mathematics',
-  'Physics',
-  'Chemistry'
+  'Computer Science', 'Software Engineering', 'Information Technology',
+  'Cyber Security', 'Data Science', 'Mathematics', 'Physics', 'Chemistry'
 ];
-
 const levels = [100, 200, 300, 400, 500];
-const semesters = ['First', 'Second'];
+const semesters = ['First Semester', 'Second Semester'];
 const sessions = ['2023/2024', '2024/2025', '2025/2026'];
 
-// Helper function to get department color
 const getDepartmentColor = (dept: string) => {
   const colors: Record<string, string> = {
     'Computer Science': 'bg-blue-100 text-blue-700',
@@ -132,26 +40,25 @@ const getDepartmentColor = (dept: string) => {
   return colors[dept] || 'bg-gray-100 text-gray-700';
 };
 
+const service = new CoreService();
+
 const ResultsManagement = () => {
-  const [results, setResults] = useState<ResultUpload[]>(initialResults);
+  const [results, setResults] = useState<ResultUpload[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedResult, setSelectedResult] = useState<ResultUpload | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<number | ''>('');
-  const [selectedStatus, setSelectedStatus] = useState('');
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
   const [isLoading, setIsLoading] = useState(false);
-  const [viewingDocument, setViewingDocument] = useState<ResultUpload | null>(null);
-  
-  // Form state matching your schema
   const [formData, setFormData] = useState({
     course: '',
     code: '',
     level: 100,
     department: '',
-    session: '2024/2025',
-    semester: 'First' as 'First' | 'Second'
+    session: '2025/2026',
+    semester: 'First Semester',
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -159,6 +66,25 @@ const ResultsManagement = () => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
+
+  
+  const fetchResults = async () => {
+    try {
+      setPageLoading(true);
+      const result = await service.get("results/find-all-results");
+      if (result.success) {
+        setResults(result.data ?? []);
+      }
+    } catch {
+      showToast("Failed to load results", "error");
+    } finally {
+      setPageLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchResults();
+  }, []);
 
   const handleOpenModal = (result?: ResultUpload) => {
     if (result) {
@@ -169,19 +95,12 @@ const ResultsManagement = () => {
         level: result.level,
         department: result.department,
         session: result.session,
-        semester: result.semester
+        semester: result.semester,
       });
       setSelectedFile(null);
     } else {
       setSelectedResult(null);
-      setFormData({
-        course: '',
-        code: '',
-        level: 100,
-        department: '',
-        session: '2024/2025',
-        semester: 'First'
-      });
+      setFormData({ course: '', code: '', level: 100, department: '', session: '2025/2026', semester: 'First Semester' });
       setSelectedFile(null);
     }
     setIsModalOpen(true);
@@ -190,14 +109,7 @@ const ResultsManagement = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedResult(null);
-    setFormData({
-      course: '',
-      code: '',
-      level: 100,
-      department: '',
-      session: '2024/2025',
-      semester: 'First'
-    });
+    setFormData({ course: '', code: '', level: 100, department: '', session: '2025/2026', semester: 'First Semester' });
     setSelectedFile(null);
   };
 
@@ -224,7 +136,6 @@ const ResultsManagement = () => {
       showToast('Please fill in all required fields', 'error');
       return;
     }
-
     if (!selectedFile && !selectedResult) {
       showToast('Please upload a result document', 'error');
       return;
@@ -232,102 +143,100 @@ const ResultsManagement = () => {
 
     setIsLoading(true);
 
-    // Simulate upload delay
-    setTimeout(() => {
+    try {
       if (selectedResult) {
-        // Update existing result
-        setResults(results.map(result =>
-          result.id === selectedResult.id
-            ? {
-                ...result,
-                course: formData.course,
-                code: formData.code,
-                level: formData.level,
-                department: formData.department,
-                session: formData.session,
-                semester: formData.semester,
-                document: selectedFile
-                  ? {
-                      name: selectedFile.name,
-                      url: URL.createObjectURL(selectedFile),
-                      size: selectedFile.size,
-                      type: selectedFile.type,
-                      uploadedAt: new Date().toISOString()
-                    }
-                  : result.document,
-              }
-            : result
-        ));
+        
+        await service.patch(`results/update-result/${selectedResult.id}`, {
+          course: formData.course,
+          code: formData.code,
+          level: formData.level,
+          department: formData.department,
+          session: formData.session,
+          semester: formData.semester,
+        });
+
+    
+        if (selectedFile) {
+          await service.upload(
+            `results/update-result/${selectedResult.id}`,
+            { file: selectedFile },
+            "PATCH"
+          );
+        }
+
         showToast('Result updated successfully', 'success');
       } else {
-        // Create new result
-        const newResult: ResultUpload = {
-          id: Date.now().toString(),
-          ...formData,
-          document: {
-            name: selectedFile!.name,
-            url: URL.createObjectURL(selectedFile!),
-            size: selectedFile!.size,
-            type: selectedFile!.type,
-            uploadedAt: new Date().toISOString()
-          },
-          uploadedBy: 'Admin User',
-          status: 'Draft'
-        };
-        setResults([newResult, ...results]);
+        
+        const createResult = await service.send("results/save-result", {
+          course: formData.course,
+          code: formData.code,
+          level: formData.level,
+          department: formData.department,
+          session: formData.session,
+          semester: formData.semester,
+        });
+
+        if (!createResult.success) {
+          showToast(createResult.message || 'Failed to upload result', 'error');
+          return;
+        }
+
+        const newId = createResult.data?.id;
+
+        // ✅ Step 2 — Upload file
+        if (selectedFile && newId) {
+          await service.upload(
+            `results/update-result/${newId}`,
+            { file: selectedFile },
+            "PATCH"
+          );
+        }
+
         showToast('Result uploaded successfully', 'success');
       }
-      setIsLoading(false);
+
+      await fetchResults();
       handleCloseModal();
-    }, 1500);
-  };
 
-  const handleUpdateStatus = (id: string, status: 'Published' | 'Draft') => {
-    setResults(results.map(result =>
-      result.id === id ? { ...result, status } : result
-    ));
-    showToast(`Result ${status.toLowerCase()}`, 'success');
-  };
-
-  const handleDeleteResult = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this result record?')) {
-      setResults(results.filter(result => result.id !== id));
-      showToast('Result deleted successfully', 'success');
+    } catch {
+      showToast('Something went wrong. Please try again.', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-  };
-
-  const getFileIcon = (type: string) => {
-    if (type.includes('pdf')) return '📄';
-    if (type.includes('sheet')) return '📊';
-    if (type.includes('word')) return '📝';
-    return '📁';
-  };
+  const handleDeleteResult = async (id: string) => {
+  if (window.confirm('Are you sure you want to delete this result record?')) {
+    try {
+      console.log("Deleting:", id);
+      const result = await service.delete(`results/delete-result/${id}`);
+      console.log("Delete result:", result); 
+      if (result.success) {
+        await fetchResults();
+        showToast('Result deleted successfully', 'success');
+      } else {
+        showToast(result.message || 'Delete failed', 'error');
+      }
+    } catch (e) {
+      console.error("Delete error:", e);
+      showToast('Failed to delete result', 'error');
+    }
+  }
+};
 
   const filteredResults = results.filter(result => {
     const matchesSearch = result.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
       result.code.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDepartment = !selectedDepartment || result.department === selectedDepartment;
     const matchesLevel = !selectedLevel || result.level === selectedLevel;
-    const matchesStatus = !selectedStatus || result.status === selectedStatus;
-    return matchesSearch && matchesDepartment && matchesLevel && matchesStatus;
+    return matchesSearch && matchesDepartment && matchesLevel;
   });
 
   return (
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50">
-      {/* Toast Notification */}
+      {/* Toast */}
       {toast.show && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-right-5 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-50">
           <div className={`flex items-center gap-3 px-5 py-3 rounded-full shadow-lg ${
             toast.type === 'success' ? 'bg-emerald-900 text-white' : 'bg-red-600 text-white'
           }`}>
@@ -365,7 +274,7 @@ const ResultsManagement = () => {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
           <div className="bg-white rounded-2xl border border-emerald-100 p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -380,35 +289,22 @@ const ResultsManagement = () => {
           <div className="bg-white rounded-2xl border border-emerald-100 p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-emerald-600 font-medium">Published</p>
-                <p className="text-3xl font-bold text-emerald-900 mt-1">{results.filter(r => r.status === 'Published').length}</p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl border border-emerald-100 p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-emerald-600 font-medium">Drafts</p>
-                <p className="text-3xl font-bold text-emerald-900 mt-1">{results.filter(r => r.status === 'Draft').length}</p>
-              </div>
-              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                <AlertCircle className="w-5 h-5 text-amber-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl border border-emerald-100 p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
                 <p className="text-sm text-emerald-600 font-medium">Departments</p>
-                <p className="text-3xl font-bold text-emerald-900 mt-1">{
-                  new Set(results.map(r => r.department)).size
-                }</p>
+                <p className="text-3xl font-bold text-emerald-900 mt-1">{new Set(results.map(r => r.department)).size}</p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
                 <School className="w-5 h-5 text-purple-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl border border-emerald-100 p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-emerald-600 font-medium">Sessions</p>
+                <p className="text-3xl font-bold text-emerald-900 mt-1">{new Set(results.map(r => r.session)).size}</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <GraduationCap className="w-5 h-5 text-blue-600" />
               </div>
             </div>
           </div>
@@ -426,7 +322,7 @@ const ResultsManagement = () => {
                   placeholder="Search by course or code..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-emerald-50/50 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 bg-emerald-50/50 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm"
                 />
               </div>
             </div>
@@ -438,40 +334,24 @@ const ResultsManagement = () => {
                 className="w-full px-4 py-2.5 bg-emerald-50/50 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm"
               >
                 <option value="">All Departments</option>
-                {departments.map(dept => (
-                  <option key={dept} value={dept}>{dept}</option>
-                ))}
+                {departments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
               </select>
             </div>
             <div className="w-full md:w-32">
               <label className="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-1.5 block">Level</label>
               <select
                 value={selectedLevel}
-                onChange={(e) => setSelectedLevel(e.target.value ? Number(e.target.value) : '' )}
+                onChange={(e) => setSelectedLevel(e.target.value ? Number(e.target.value) : '')}
                 className="w-full px-4 py-2.5 bg-emerald-50/50 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm"
               >
                 <option value="">All Levels</option>
-                {levels.map(level => (
-                  <option key={level} value={level}>{level}L</option>
-                ))}
+                {levels.map(level => <option key={level} value={level}>{level}L</option>)}
               </select>
             </div>
-            <div className="w-full md:w-36">
-              <label className="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-1.5 block">Status</label>
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full px-4 py-2.5 bg-emerald-50/50 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm"
-              >
-                <option value="">All Status</option>
-                <option value="Published">Published</option>
-                <option value="Draft">Draft</option>
-              </select>
-            </div>
-            {(selectedDepartment || selectedLevel || selectedStatus || searchTerm) && (
+            {(selectedDepartment || selectedLevel || searchTerm) && (
               <button
-                onClick={() => { setSelectedDepartment(''); setSelectedLevel(''); setSelectedStatus(''); setSearchTerm(''); }}
-                className="px-4 py-2.5 text-emerald-600 hover:text-emerald-700 text-sm font-medium w-full md:w-auto"
+                onClick={() => { setSelectedDepartment(''); setSelectedLevel(''); setSearchTerm(''); }}
+                className="px-4 py-2.5 text-emerald-600 hover:text-emerald-700 text-sm font-medium"
               >
                 Clear filters
               </button>
@@ -479,136 +359,119 @@ const ResultsManagement = () => {
           </div>
         </div>
 
-        {/* Results Table */}
-        <div className="bg-white rounded-2xl border border-emerald-100 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-emerald-50/50 border-b border-emerald-100">
-                  <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">Course Info</th>
-                  <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">Department</th>
-                  <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">Level</th>
-                  <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">Session</th>
-                  <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">Document</th>
-                  <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">Status</th>
-                  <th className="px-5 py-4 text-right text-xs font-semibold text-emerald-700 uppercase tracking-wide">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-emerald-50">
-                {filteredResults.map((result) => (
-                  <tr key={result.id} className="hover:bg-emerald-50/30 transition-colors">
-                    <td className="px-5 py-4">
-                      <div>
+        {/* Page Loader */}
+        {pageLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Loader2 size={40} className="text-emerald-600 animate-spin" />
+            <p className="text-emerald-600/70 text-sm font-medium">Loading results...</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-emerald-100 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-emerald-50/50 border-b border-emerald-100">
+                    <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">Course Info</th>
+                    <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">Department</th>
+                    <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">Level</th>
+                    <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">Session</th>
+                    <th className="px-5 py-4 text-left text-xs font-semibold text-emerald-700 uppercase tracking-wide">File</th>
+                    <th className="px-5 py-4 text-right text-xs font-semibold text-emerald-700 uppercase tracking-wide">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-emerald-50">
+                  {filteredResults.map((result) => (
+                    <tr key={result.id} className="hover:bg-emerald-50/30 transition-colors">
+                      <td className="px-5 py-4">
                         <p className="font-semibold text-emerald-900">{result.course}</p>
                         <p className="text-xs text-emerald-500 font-mono mt-0.5">{result.code}</p>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${getDepartmentColor(result.department)}`}>
-                        {result.department}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">
-                        {result.level}L
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-1">
-                        <Calendar size="12" className="text-emerald-400" />
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${getDepartmentColor(result.department)}`}>
+                          {result.department}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">
+                          {result.level}L
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
                         <span className="text-sm text-gray-600">{result.session} • {result.semester}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{getFileIcon(result.document.type)}</span>
-                        <div>
-                          <p className="text-sm text-gray-700 truncate max-w-45">{result.document.name}</p>
-                          <p className="text-xs text-gray-400">{formatFileSize(result.document.size)}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      {result.status === 'Published' ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
-                          <CheckCircle size="12" /> Published
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 text-amber-700 rounded-lg text-xs font-medium">
-                          <AlertCircle size="12" /> Draft
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => window.open(result.document.url, '_blank')}
-                          className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
-                          title="Download"
-                        >
-                          <Download size="16" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenModal(result)}
-                          className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Edit"
-                        >
-                          <Eye size="16" />
-                        </button>
-                        {result.status === 'Draft' && (
-                          <button
-                            onClick={() => handleUpdateStatus(result.id, 'Published')}
-                            className="p-2 text-green-500 hover:bg-green-50 rounded-lg transition-colors"
-                            title="Publish"
-                          >
-                            <CheckCircle size="16" />
-                          </button>
+                      </td>
+                      <td className="px-5 py-4">
+                        {result.file ? (
+                          <div className="flex items-center gap-2">
+                            <FileText size={16} className="text-emerald-500" />
+                            <span className="text-sm text-emerald-700">PDF File</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">No file</span>
                         )}
-                        <button
-                          onClick={() => handleDeleteResult(result.id)}
-                          className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 size="16" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          
-          {filteredResults.length === 0 && (
-            <div className="text-center py-16">
-              <FileText className="w-16 h-16 text-emerald-200 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-500">No results found</h3>
-              <p className="text-sm text-gray-400 mt-1">Try adjusting your search or filters</p>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          {result.file && (
+                            <button
+                              onClick={() => window.open(result.file, '_blank')}
+                              className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                              title="Download"
+                            >
+                              <Download size={16} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleOpenModal(result)}
+                            className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteResult(result.id)}
+                            className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
+
+            {filteredResults.length === 0 && (
+              <div className="text-center py-16">
+                <FileText className="w-16 h-16 text-emerald-200 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-500">No results found</h3>
+                <p className="text-sm text-gray-400 mt-1">Try adjusting your search or filters</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Upload/Edit Modal */}
+      {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl">
             <div className="sticky top-0 bg-white border-b border-emerald-100 px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center">
-                  <Upload size="18" className="text-[#0e2d3d]" />
+                  <Upload size={18} className="text-[#0e2d3d]" />
                 </div>
                 <h2 className="text-xl font-bold text-emerald-900">
                   {selectedResult ? 'Edit Result' : 'Upload New Result'}
                 </h2>
               </div>
-              <button onClick={handleCloseModal} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <X size="20" />
+              <button onClick={handleCloseModal} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X size={20} />
               </button>
             </div>
 
             <div className="p-6 space-y-5">
-              {/* Course Name - matches schema */}
               <div>
                 <label className="block text-sm font-semibold text-emerald-800 mb-1.5">
                   Course Name <span className="text-red-500">*</span>
@@ -618,12 +481,11 @@ const ResultsManagement = () => {
                   value={formData.course}
                   onChange={(e) => setFormData({ ...formData, course: e.target.value })}
                   placeholder="e.g., Elementary Mathematics 1"
-                  className="w-full px-4 py-2.5 bg-emerald-50/40 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
+                  className="w-full px-4 py-2.5 bg-emerald-50/40 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {/* Course Code */}
                 <div>
                   <label className="block text-sm font-semibold text-emerald-800 mb-1.5">
                     Course Code <span className="text-red-500">*</span>
@@ -636,24 +498,18 @@ const ResultsManagement = () => {
                     className="w-full px-4 py-2.5 bg-emerald-50/40 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
                   />
                 </div>
-                {/* Level */}
                 <div>
-                  <label className="block text-sm font-semibold text-emerald-800 mb-1.5">
-                    Level <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block text-sm font-semibold text-emerald-800 mb-1.5">Level</label>
                   <select
                     value={formData.level}
                     onChange={(e) => setFormData({ ...formData, level: Number(e.target.value) })}
                     className="w-full px-4 py-2.5 bg-emerald-50/40 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
                   >
-                    {levels.map(level => (
-                      <option key={level} value={level}>{level}L</option>
-                    ))}
+                    {levels.map(level => <option key={level} value={level}>{level}L</option>)}
                   </select>
                 </div>
               </div>
 
-              {/* Department - matches schema */}
               <div>
                 <label className="block text-sm font-semibold text-emerald-800 mb-1.5">
                   Department <span className="text-red-500">*</span>
@@ -664,51 +520,38 @@ const ResultsManagement = () => {
                   className="w-full px-4 py-2.5 bg-emerald-50/40 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
                 >
                   <option value="">Select Department</option>
-                  {departments.map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
-                  ))}
+                  {departments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {/* Session */}
                 <div>
-                  <label className="block text-sm font-semibold text-emerald-800 mb-1.5">
-                    Academic Session
-                  </label>
+                  <label className="block text-sm font-semibold text-emerald-800 mb-1.5">Academic Session</label>
                   <select
                     value={formData.session}
                     onChange={(e) => setFormData({ ...formData, session: e.target.value })}
                     className="w-full px-4 py-2.5 bg-emerald-50/40 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
                   >
-                    {sessions.map(session => (
-                      <option key={session} value={session}>{session}</option>
-                    ))}
+                    {sessions.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
-                {/* Semester */}
                 <div>
-                  <label className="block text-sm font-semibold text-emerald-800 mb-1.5">
-                    Semester
-                  </label>
+                  <label className="block text-sm font-semibold text-emerald-800 mb-1.5">Semester</label>
                   <select
                     value={formData.semester}
-                    onChange={(e) => setFormData({ ...formData, semester: e.target.value as 'First' | 'Second' })}
+                    onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
                     className="w-full px-4 py-2.5 bg-emerald-50/40 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
                   >
-                    {semesters.map(sem => (
-                      <option key={sem} value={sem}>{sem} Semester</option>
-                    ))}
+                    {semesters.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
               </div>
 
-              {/* File Upload */}
               <div>
                 <label className="block text-sm font-semibold text-emerald-800 mb-1.5">
                   Result Document <span className="text-red-500">*</span>
                 </label>
-                <div 
+                <div
                   className="border-2 border-dashed border-emerald-200 rounded-xl p-6 text-center hover:border-emerald-400 transition-colors cursor-pointer bg-emerald-50/20"
                   onClick={() => document.getElementById('fileInput')?.click()}
                 >
@@ -721,29 +564,25 @@ const ResultsManagement = () => {
                   />
                   {selectedFile ? (
                     <div className="flex items-center justify-center gap-3">
-                      <FileText size="24" className="text-emerald-500" />
+                      <FileText size={24} className="text-emerald-500" />
                       <div className="text-left">
                         <p className="text-sm font-medium text-emerald-800">{selectedFile.name}</p>
-                        <p className="text-xs text-emerald-500">{formatFileSize(selectedFile.size)}</p>
                       </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
-                        className="p-1.5 hover:bg-emerald-100 rounded-lg transition-colors"
-                      >
-                        <X size="14" className="text-emerald-500" />
+                      <button onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }} className="p-1.5 hover:bg-emerald-100 rounded-lg">
+                        <X size={14} className="text-emerald-500" />
                       </button>
                     </div>
-                  ) : selectedResult?.document ? (
+                  ) : selectedResult?.file ? (
                     <div className="flex items-center justify-center gap-3">
-                      <FileText size="24" className="text-emerald-500" />
+                      <FileText size={24} className="text-emerald-500" />
                       <div className="text-left">
-                        <p className="text-sm font-medium text-emerald-800">{selectedResult.document.name}</p>
-                        <p className="text-xs text-emerald-500">Current file (upload new to replace)</p>
+                        <p className="text-sm font-medium text-emerald-800">Existing file uploaded</p>
+                        <p className="text-xs text-emerald-500">Upload new to replace</p>
                       </div>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2">
-                      <Upload size="32" className="text-emerald-400" />
+                      <Upload size={32} className="text-emerald-400" />
                       <span className="text-sm text-gray-500">Click or drag to upload result document</span>
                       <span className="text-xs text-gray-400">PDF, Excel, or Word files (Max 10MB)</span>
                     </div>
@@ -753,27 +592,18 @@ const ResultsManagement = () => {
             </div>
 
             <div className="sticky bottom-0 bg-white border-t border-emerald-100 px-6 py-4 flex justify-end gap-3">
-              <button
-                onClick={handleCloseModal}
-                className="px-5 py-2.5 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-xl font-medium transition-colors"
-              >
+              <button onClick={handleCloseModal} className="px-5 py-2.5 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-xl font-medium">
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={isLoading}
-                className="px-6 py-2.5 bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2.5 bg-linear-to-br from-[#000000f7] via-[#0e2d3d] to-[#041414] text-white rounded-xl font-medium shadow-md disabled:opacity-50 flex items-center gap-2"
               >
                 {isLoading ? (
-                  <>
-                    <RefreshCw size="16" className="animate-spin" />
-                    Uploading...
-                  </>
+                  <><Loader2 size={16} className="animate-spin" /> Uploading...</>
                 ) : (
-                  <>
-                    <Upload size="16" />
-                    {selectedResult ? 'Save Changes' : 'Upload Result'}
-                  </>
+                  <><Upload size={16} /> {selectedResult ? 'Save Changes' : 'Upload Result'}</>
                 )}
               </button>
             </div>
@@ -782,34 +612,10 @@ const ResultsManagement = () => {
       )}
 
       <style>{`
-        .animate-in {
-          animation: animateIn 0.2s ease-out;
-        }
-        .slide-in-from-right-5 {
-          animation: slideInRight 0.3s ease-out;
-        }
-        .fade-in {
-          animation: fadeIn 0.2s ease-out;
-        }
-        .zoom-in-95 {
-          animation: zoomIn 0.2s ease-out;
-        }
-        @keyframes animateIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes zoomIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
+        @keyframes animateIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
       `}</style>
     </div>
   );
