@@ -31,15 +31,27 @@ const staticDevInfo: Record<number, {
   accent: string;
 }> = {
   3: {
-    role: "Backend Lead",
-    title: "Full Stack Engineer",
-    bio: "Building robust, scalable APIs and distributed systems. Node.js, PostgreSQL, and cloud-native architecture are home turf.",
-    stack: ["Node.js", "NestJS", "PostgreSQL", "Redis", "Docker"],
-    portfolio: "https://nacosnigeria.org.ng",
-    github: "github.com/nacos-be",
-    icon: <Server size={18} />,
-    accent: "#3b82f6",
-  },
+  role: "Lead Developer",
+  title: "Full Stack Engineer • Mobile Developer • Game Developer",
+  bio: "Full stack engineer building scalable backend systems, modern web apps, mobile applications, and interactive gaming experiences with performance-focused architecture.",
+  stack: [
+    "Flutter",
+    "Node.js",
+    "NestJS",
+    "Go",
+    "PostgreSQL",
+    "React",
+    "Next.js",
+    "TypeScript",
+    "Three.js",
+    "Unity",
+    "Firebase"
+  ],
+  portfolio: "https://portfolio-nu-steel-90.vercel.app/",
+  github: "https://github.com/lan5555",
+  icon: <Server size={18} />,
+  accent: "#3b82f6",
+},
   16: {
     role: "Frontend Lead",
     title: "Frontend Engineer",

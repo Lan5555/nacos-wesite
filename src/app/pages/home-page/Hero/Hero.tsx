@@ -5,7 +5,7 @@ import CoreService from "@/app/hooks/core-service";
 import styles from "./Hero.module.css";
 import { useToast } from "@/app/providers/toast-provider";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 
 interface HeroData {
   totalUsers?: number;
@@ -33,20 +33,20 @@ const Hero: React.FC<HeroProps> = ({ sharedData, isLoading }) => {
   const { showToast } = useToast();
   const service: CoreService = new CoreService();
 
-  const fadeUp = {
+  const fadeUp: Variants = {
     hidden: { opacity: 0, y: 40 },
     visible: (delay = 0) => ({
       opacity: 1,
       y: 0,
       transition: {
         duration: 0.8,
-        delay,
-        ease: [0.22, 1, 0.36, 1],
+        delay: delay,
+        ease: [0.22, 1, 0.36, 1] as any,
       },
     }),
   };
 
-  const floatingCard = {
+  const floatingCard: Variants = {
     hidden: {
       opacity: 0,
       x: 80,
@@ -60,7 +60,7 @@ const Hero: React.FC<HeroProps> = ({ sharedData, isLoading }) => {
       scale: 1,
       transition: {
         duration: 1,
-        ease: [0.22, 1, 0.36, 1],
+        ease: [0.22, 1, 0.36, 1] as any,
       },
     },
   };
@@ -115,7 +115,7 @@ const Hero: React.FC<HeroProps> = ({ sharedData, isLoading }) => {
             custom={0.1}
           >
             <span>🌿</span>
-            <span>Unijos&apos;s Premier CS Student Body</span>
+            <span>Unijos&apos;s Premier CP Student Body</span>
           </motion.div>
 
           <motion.h1
@@ -136,7 +136,7 @@ const Hero: React.FC<HeroProps> = ({ sharedData, isLoading }) => {
             variants={fadeUp}
             custom={0.3}
           >
-            NACOS unites Computer Science students across University of Jos —
+            NACOS unites Computing students across University of Jos —
             providing resources, community, and career pathways for
             tomorrow&apos;s innovators.
           </motion.p>

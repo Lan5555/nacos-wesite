@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Nacos Unijos",
   description: "website is a centralized digital platform designed to connect, inform, and empower computing students across institutions in Nigeria.",
+  icons: { icon: '/nacos.png' }
 };
 
 export default function RootLayout({

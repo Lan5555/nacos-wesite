@@ -253,8 +253,21 @@ const DashboardView: React.FC = () => {
       {/* Main Grid: Lectures & Progress */}
       <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-start w-full">
         {/* Left Column: Today's Lectures */}
-        <div className="lg:col-span-2 bg-linear-to-br from-slate-900 to-emerald-900 border border-white/10 rounded-3xl shadow-xl overflow-hidden h-full flex flex-col relative group min-h-80">
+        <div className="lg:col-span-2 bg-white/40 backdrop-blur-xl border border-[#d8eedd] rounded-3xl shadow-sm overflow-hidden h-full flex flex-col relative group min-h-80">
           {/* Animated Background Elements */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <motion.div
+              animate={{ 
+                y: [0, -20, 0],
+                rotate: [0, 10, 0],
+                scale: [1, 1.05, 1]
+              }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute -right-12 -bottom-12 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-700"
+            >
+              <Sparkles className="w-64 h-64 text-[#0f6e3f]" />
+            </motion.div>
+          </div>
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             {/* Big Sparkle Decoration */}
             <motion.div
@@ -266,7 +279,7 @@ const DashboardView: React.FC = () => {
               transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0"
             >
-              <Sparkles className="w-64 h-64 text-white" />
+              <Sparkles className="w-64 h-64 text-[#22b864]/5" />
             </motion.div>
 
             <motion.div 
@@ -287,6 +300,24 @@ const DashboardView: React.FC = () => {
               className="absolute -bottom-10 -left-10 w-48 h-48 bg-[#e6faf0] rounded-full blur-2xl opacity-40"
             />
             
+            <motion.div 
+              animate={{ 
+                scale: [1, 1.1, 1],
+                opacity: [0.05, 0.15, 0.05],
+                rotate: [0, -45, 0]
+              }}
+              transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute -top-10 -right-10 w-56 h-56 bg-[#22b864] rounded-full blur-3xl opacity-20"
+            />
+
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+              className="absolute top-4 right-4 opacity-[0.08]"
+            >
+              <Sparkles className="w-32 h-32 text-[#0f6e3f]" />
+            </motion.div>
+
             {/* Floating Particles */}
             {[...Array(6)].map((_, i) => (
               <motion.div
@@ -312,12 +343,12 @@ const DashboardView: React.FC = () => {
             ))}
           </div>
 
-          <div className="flex items-center justify-between border-b border-white/10 p-5 md:px-6 relative z-10 bg-white/5 backdrop-blur-md">
+          <div className="flex items-center justify-between border-b border-[#d8eedd] p-5 md:px-6 relative z-10 bg-white/20">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+              <div className="w-8 h-8 rounded-lg bg-[#22b864]/10 flex items-center justify-center text-[#0f6e3f]">
                 <Lightbulb className="w-4 h-4" />
               </div>
-              <h3 className="text-lg font-bold text-white font-serif">
+              <h3 className="text-lg font-bold text-[#071a0d] font-serif">
                 Did You Know?
               </h3>
             </div>
@@ -328,7 +359,7 @@ const DashboardView: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-8 md:p-12 flex-1 flex flex-col justify-center relative z-10">
+          <div className="p-8 md:p-10 flex-1 flex flex-col justify-center relative z-10 overflow-y-auto max-h-60">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentFactIndex}
@@ -338,13 +369,13 @@ const DashboardView: React.FC = () => {
                 transition={{ duration: 0.5 }}
                 className="flex flex-col gap-4"
               >
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full w-fit flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0f6e3f] bg-[#22b864]/10 px-3 py-1 rounded-full w-fit flex items-center gap-2">
                   <Sparkles className="w-3 h-3" />
                   {facts[currentFactIndex].category}
                 </span>
-                <p className="text-xl md:text-2xl lg:text-3xl font-serif text-emerald-50/90 leading-relaxed italic relative">
+                <p className="text-xl md:text-2xl lg:text-3xl font-serif text-[#071a0d] leading-relaxed italic relative">
                   <span className="absolute -left-6 -top-2 text-4xl text-[#22b864]/20 font-serif">"</span>
-                  &ldquo;{facts[currentFactIndex].content}&rdquo;
+                  {facts[currentFactIndex].content}
                 </p>
               </motion.div>
             </AnimatePresence>
