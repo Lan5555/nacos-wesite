@@ -3,12 +3,14 @@ import { useState } from "react";
 import styles from "./Navbar.module.css";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Image from 'next/image';
+
 
 const Navbar: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
 
-  const navLinks = ["About", "Resources", "Excos", "Updates", "Results", "Events", "Contact"];
+  const navLinks = ["About", "Resources", "Excos", "Updates", "Results", "Events", "Contact", "Developers"];
 
   return (
     <motion.nav
@@ -23,7 +25,13 @@ const Navbar: React.FC = () => {
       <div className={styles.inner}>
         {/* Logo */}
         <a href="#" className={styles.logo}>
-          <span className={styles.logoIcon}>N</span>
+          <Image
+            src="/nacos.png"
+            alt="NACOS Logo"
+            width={40}
+            height={40}
+            className={styles.logoIcon}
+          />
           <span className={styles.logoText}>
             <span className={styles.na}>NAC</span>
             <span className={styles.cos}>OS</span>

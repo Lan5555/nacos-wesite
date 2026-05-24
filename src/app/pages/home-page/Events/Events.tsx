@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import CoreService from "@/app/hooks/core-service";
 import styles from "./Events.module.css";
+import { useRouter } from "next/navigation";
 
 interface ApiEvent {
   id: number;
@@ -88,6 +89,7 @@ const cardFade = {
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const fetchData = async () => {
     try {
@@ -185,7 +187,7 @@ export default function Events() {
                       <MapPin size={13} style={{ display: "inline", marginRight: 4 }} />
                       {event.location}
                     </span>
-                    <button className={styles.actionBtn}>
+                    <button onClick={() => router.push('/pages/login')} className={styles.actionBtn}>
                       {event.actionLabel}
                       <ArrowRight size={13} style={{ marginLeft: 6 }} />
                     </button>

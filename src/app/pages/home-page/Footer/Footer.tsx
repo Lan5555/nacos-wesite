@@ -8,6 +8,7 @@ const navLinks = [
   { label: "Results", href: "#results" },
   { label: "Events", href: "#events" },
   { label: "Contact", href: "#contact" },
+  { label: "Developers", href: "#developers" },
   { label: "Privacy", href: "#" },
 ];
 
@@ -18,7 +19,7 @@ export default function Footer() {
         <a href="#" className={styles.logo}>
           <span className={styles.logoNac}>NAC</span>
           <span className={styles.logoOs}>OS</span>
-          <span className={styles.logoNig}> Nigeria</span>
+          <span className={styles.logoNig}>Unijos</span>
         </a>
 
         <nav className={styles.links}>

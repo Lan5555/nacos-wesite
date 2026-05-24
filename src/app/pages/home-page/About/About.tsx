@@ -44,25 +44,32 @@ const About: React.FC<AboutProps> = ({ data, loading }) => {
             ease: [0.22, 1, 0.36, 1],
           }}
         >
-          <div className={styles.badge}>WHO WE ARE</div>
+          <div className={styles.badge}>ABOUT NACOS UNIJOS</div>
 
           <h2 className={styles.heading}>
-            Building Nigeria&apos;s{" "}
-            <span className={styles.green}>Digital Future</span>
-          </h2>
+  More Than a Tech Association —{" "}
+  <span className={styles.green}>A Community Built for Growth</span>
+</h2>
 
           <p className={styles.body}>
-            NACOS — the Nigeria Association of Computer Science Students — is
-            the umbrella body uniting CS students across Nigeria&apos;s
-            universities and polytechnics. Since{" "}
-            {loading ? <span className={styles.skeletonText} /> : data?.established ?? 2008}, we&apos;ve been championing academic
-            excellence, professional growth, and social development.
+            NACOS UNIJOS is the official chapter of the Nigeria Association of
+            Computing Students at the University of Jos, bringing together
+            passionate students driven by technology, innovation, leadership, and
+            academic excellence.
           </p>
 
           <p className={styles.body}>
-            We believe every Computer Science student deserves access to quality
-            study materials, mentorship from industry leaders, and a thriving
-            community of peers pushing each other toward greatness.
+            More than just a student association, NACOS UNIJOS is a thriving
+            community where future software engineers, designers, cybersecurity
+            experts, data scientists, and tech leaders connect, learn, build, and
+            grow together through events, workshops, mentorship, collaborations,
+            and real-world opportunities.
+          </p>
+
+          <p className={styles.body}>
+            We are committed to creating an environment where students can explore
+            their potential, develop industry-ready skills, contribute to impactful
+            projects, and become part of Nigeria’s growing digital future.
           </p>
 
           <div className={styles.valuesGrid}>
@@ -120,33 +127,36 @@ const About: React.FC<AboutProps> = ({ data, loading }) => {
             }}
           >
             <span className={styles.estLabel}>
-              Est. {loading ? <span className={styles.skeletonText} /> : data?.established ?? 2008}
+              NACOS UNIJOS
             </span>
-            <p className={styles.estSub}>Nigeria&apos;s Premier CS Student Association</p>
+            <p className={styles.estSub}>
+              University of Jos Tech Community
+            </p>
           </motion.div>
 
           <div className={styles.statsGrid}>
             <div className={styles.statCard}>
               <span className={styles.statNum}>
-                {loading ? "..." : data?.totalUsers ? `${data.totalUsers.toLocaleString()}+` : "5,000+"}
+                {loading ? "..." : data?.totalUsers ? `${data.totalUsers.toLocaleString()}+` : "500+"}
               </span>
-              <span className={styles.statLabel}>Active Members</span>
+              <span className={styles.statLabel}>Student Members</span>
             </div>
-            <div className={styles.statCard}>
-              <span className={styles.statNum}>{loading ? "..." : data?.chapters ?? 48}</span>
-              <span className={styles.statLabel}>Chapters Nationwide</span>
-            </div>
+
             <div className={styles.statCard}>
               <span className={styles.statNum}>
-                {loading ? "..." : data?.graduateEmployment ? `${data.graduateEmployment}%` : "98%"}
+                {loading ? "..." : data?.totalEvents ? `${data.totalEvents}+` : "50+"}
               </span>
-              <span className={styles.statLabel}>Graduate Employment</span>
+              <span className={styles.statLabel}>Events & Workshops</span>
             </div>
+
             <div className={styles.statCard}>
-              <span className={styles.statNum}>
-                {loading ? "..." : data?.totalEvents ? `${data.totalEvents}+` : "120+"}
-              </span>
-              <span className={styles.statLabel}>Events Per Year</span>
+              <span className={styles.statNum}>Tech</span>
+              <span className={styles.statLabel}>Innovation & Leadership</span>
+            </div>
+
+            <div className={styles.statCard}>
+              <span className={styles.statNum}>UNIJOS</span>
+              <span className={styles.statLabel}>Building Digital Excellence</span>
             </div>
           </div>
         </motion.div>
