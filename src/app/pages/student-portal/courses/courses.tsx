@@ -357,7 +357,7 @@ const MyCourses: React.FC = () => {
 
 export default MyCourses;
 
-export const showToastMessage = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+ const showToastMessage = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
   const toastRoot = document.getElementById('toast-root');
   if (!toastRoot) return;
   

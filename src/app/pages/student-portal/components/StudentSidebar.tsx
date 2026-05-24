@@ -14,8 +14,18 @@ import {
   X,
   Brain,
   Gamepad,
+  ShieldCheck,
 } from "lucide-react";
-import StudentProfileCard, { StudentProfile } from "./StudentProfileCard";
+import StudentProfileCard from "./StudentProfileCard";
+
+export interface StudentProfile {
+  name: string;
+  level: string;
+  department: string;
+  matricNo: string;
+  initials: string;
+  isAdmin?: boolean;
+}
 
 interface SidebarItemProps {
   icon: React.ElementType;
@@ -133,6 +143,14 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
     },
   ];
 
+  const adminNavItems = profile?.isAdmin ? [
+    {
+      id: "course-reps",
+      icon: ShieldCheck,
+      label: "Rep Console",
+    }
+  ] : [];
+
   return (
     <aside className="w-64 min-h-screen bg-linear-to-br from-[#021409] via-[#042b12] to-[#0a4a20] flex flex-col justify-between p-5 shrink-0 border-r border-[#22b864]/10 relative z-40 shadow-2xl">
       
@@ -173,7 +191,7 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
         </div>
 
         {/* Navigation Sections */}
-        <div className="space-y-6 flex-1">
+        <div className="space-y-6 flex-1 overflow-y-auto max-h-[calc(100vh-280px)] pr-1 custom-sidebar-scroll">
           {/* Main Links */}
           <div className="space-y-2">
             <span className="text-[#88e8b0]/50 text-[10px] font-extrabold uppercase tracking-wider px-4 select-none">
@@ -211,6 +229,26 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
             </div>
           </div>
 
+          {/* Admin/Rep Links */}
+          {adminNavItems.length > 0 && (
+            <div className="space-y-2">
+              <span className="text-[#88e8b0]/50 text-[10px] font-extrabold uppercase tracking-wider px-4 select-none">
+                Management
+              </span>
+              <div className="space-y-1 pt-1">
+                {adminNavItems.map((item) => (
+                  <SidebarItem
+                    key={item.id}
+                    icon={item.icon}
+                    label={item.label}
+                    active={activeSection === item.id}
+                    onClick={() => onSectionChange(item.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Decorative Quick Tip */}
           <div className="mt-8 mx-2 p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm relative overflow-hidden group">
             <div className="absolute -right-4 -top-4 w-12 h-12 bg-[#22b864]/10 rounded-full blur-xl group-hover:bg-[#22b864]/20 transition-colors"></div>
@@ -229,6 +267,16 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
       <div className="pt-5 border-t border-[#22b864]/20 mt-auto relative z-10">
         <StudentProfileCard profile={profile} />
       </div>
+
+      <style jsx>{`
+        .custom-sidebar-scroll::-webkit-scrollbar {
+          width: 3px;
+        }
+        .custom-sidebar-scroll::-webkit-scrollbar-thumb {
+          background: rgba(34, 184, 100, 0.2);
+          border-radius: 10px;
+        }
+      `}</style>
     </aside>
   );
 };
