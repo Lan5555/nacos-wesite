@@ -6,6 +6,7 @@ import CoreService from "@/app/hooks/core-service";
 import styles from "./Developers.module.css";
 import { Globe, Code2, Server, Layers, ExternalLink } from "lucide-react";
 import { FaGithub } from "react-icons/fa";
+import Image from 'next/image';
 
 interface DevData {
   id: number;
@@ -31,43 +32,44 @@ const staticDevInfo: Record<number, {
   accent: string;
 }> = {
   3: {
-  role: "Lead Developer",
-  title: "Full Stack Engineer • Mobile Developer • Game Developer",
-  bio: "Full stack engineer building scalable backend systems, modern web apps, mobile applications, and interactive gaming experiences with performance-focused architecture.",
-  stack: [
-    "Flutter",
-    "Node.js",
-    "NestJS",
-    "Go",
-    "PostgreSQL",
-    "React",
-    "Next.js",
-    "TypeScript",
-    "Three.js",
-    "Unity",
-    "Firebase"
-  ],
-  portfolio: "https://portfolio-nu-steel-90.vercel.app/",
-  github: "https://github.com/lan5555",
-  icon: <Server size={18} />,
-  accent: "#3b82f6",
-},
+    role: "Lead Developer",
+    title: "Full Stack Engineer • Mobile Developer • Game Developer",
+    bio: "Full stack engineer building scalable backend systems, modern web apps, mobile applications, and interactive gaming experiences with performance-focused architecture.",
+    stack: [
+      "Flutter",
+      "Node.js",
+      "NestJS",
+      "Go",
+      "PostgreSQL",
+      "React",
+      "Next.js",
+      "TypeScript",
+      "Three.js",
+      "Unity",
+      "Firebase"
+    ],
+    portfolio: "https://portfolio-nu-steel-90.vercel.app/",
+    github: "github.com/lan5555",
+    icon: <Server size={18} />,
+    accent: "#3b82f6",
+  },
   16: {
     role: "Frontend Lead",
-    title: "Frontend Engineer",
-    bio: "Crafting pixel-perfect interfaces with Next.js & TypeScript. Passionate about motion design and scalable design systems.",
-    stack: ["Next.js", "TypeScript", "Tailwind", "Framer Motion", "Figma"],
-    portfolio: "https://nacosnigeria.org.ng",
-    github: "github.com/nacos-fe",
+    title: "Full Stack Engineer",
+    bio: "Full stack engineer specialising in modern web applications, crafting clean, responsive frontends and scalable backend systems with a strong focus on performance and user experience.",
+    stack: ["Next.js", "React.js", "Javascript(ES6+)", "TypeScript", "Node.js", "MongoDB", "Firebase", "Tailwind", "Framer Motion", "Figma"],
+    portfolio: "https://ramlah-portfolio.vercel.app/",
+    github: "github.com/Ramlah22/",
     icon: <Layers size={18} />,
     accent: "#22863a",
-  } 
+  }
 };
 
-const contributors = {
-  frontend: ["Joseph Akujieze", "Ibrahim Umar Aliyu"],
-  backend: ["Victor ilonze"],
-};
+const contributors = [
+  { name: "Joseph Akujieze", role: "FE", image: "/joseph.jpeg", label: "Frontend Developer" },
+  { name: "Ibrahim Umar Aliyu", role: "FE", image: "/ibrahim.jpeg", label: "Frontend Developer" },
+  { name: "Victor Ilonze", role: "BE", image: "/victor.jpeg", label: "Backend Developer" },
+];
 
 function DevCard({ dev, info, index }: {
   dev: DevData;
@@ -293,27 +295,25 @@ export default function Developers() {
         >
           <p className={styles.contribLabel}>also shipped some things</p>
           <div className={styles.contribList}>
-            {contributors.frontend.map((name) => (
-              <motion.span
-                key={name}
-                className={styles.contribName}
-                whileHover={{ scale: 1.05 }}
-              >
-                <span className={styles.contribDot} style={{ background: "#22863a" }} />
-                {name}
-                <span className={styles.contribTag}>FE</span>
-              </motion.span>
-            ))}
-            {contributors.backend.map((name) => (
-              <motion.span
-                key={name}
-                className={styles.contribName}
-                whileHover={{ scale: 1.05 }}
-              >
-                <span className={styles.contribDot} style={{ background: "#3b82f6" }} />
-                {name}
-                <span className={styles.contribTag} style={{ background: "rgba(59,130,246,0.1)", color: "#3b82f6" }}>BE</span>
-              </motion.span>
+            {contributors.map((c) => (
+              <motion.div key={c.name} className={styles.contribCard} whileHover={{ y: -4 }}>
+                <div className={styles.contribImgWrap}>
+                  <img src={c.image} alt={c.name} className={styles.contribImg} />
+                </div>
+                <div className={styles.contribInfo}>
+                  <span className={styles.contribName}>{c.name}</span>
+                  <span className={styles.contribRole}>{c.label}</span>
+                  <span
+                    className={styles.contribTag}
+                    style={{
+                      background: c.role === "FE" ? "rgba(34,134,58,0.15)" : "rgba(59,130,246,0.15)",
+                      color: c.role === "FE" ? "#2dba4e" : "#60a5fa",
+                    }}
+                  >
+                    {c.role}
+                  </span>
+                </div>
+              </motion.div>
             ))}
           </div>
         </motion.div>
