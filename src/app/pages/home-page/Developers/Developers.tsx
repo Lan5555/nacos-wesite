@@ -37,7 +37,7 @@ const staticDevInfo: Record<number, {
     bio: "Full stack engineer building scalable backend systems, modern web apps, mobile applications, and interactive gaming experiences with performance-focused architecture.",
     stack: [
       "Flutter",
-      "Node.js",
+      "wxWidgets",
       "NestJS",
       "Go",
       "PostgreSQL",
@@ -46,7 +46,8 @@ const staticDevInfo: Record<number, {
       "TypeScript",
       "Three.js",
       "Unity",
-      "Firebase"
+      "Java",
+      "Others.."
     ],
     portfolio: "https://portfolio-nu-steel-90.vercel.app/",
     github: "github.com/lan5555",
